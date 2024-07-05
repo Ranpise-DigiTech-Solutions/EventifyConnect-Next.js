@@ -69,6 +69,6 @@ const customerMasterSchema = new Schema<CustomerMaster>({
 }, { timestamps: true });
 
 // Define and export your model
-const CustomerMaster = mongoose.model<CustomerMaster>("customerMaster", customerMasterSchema);
+const CustomerMaster = mongoose.models.customerMaster || mongoose.model<CustomerMaster>("customerMaster", customerMasterSchema);
 
 export default CustomerMaster;

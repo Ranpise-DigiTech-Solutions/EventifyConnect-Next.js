@@ -66,7 +66,7 @@ const bookingMasterSchema = new Schema<BookingMaster>({
 // Ensure unique index on documentId
 bookingMasterSchema.index({ documentId: 1 }, { unique: true });
 
-// Define and export your model
-const BookingMaster = mongoose.model<BookingMaster>("bookingMaster", bookingMasterSchema);
+// Check if the model is already defined before defining it
+const BookingMaster = mongoose.models.bookingMaster || mongoose.model<BookingMaster>('bookingMaster', bookingMasterSchema);
 
 export default BookingMaster;

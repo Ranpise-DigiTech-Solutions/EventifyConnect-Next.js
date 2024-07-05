@@ -63,6 +63,6 @@ const vendorMasterSchema = new Schema<VendorMaster>({
 }, { timestamps: true });
 
 // Define and export your model
-const VendorMaster = mongoose.model<VendorMaster>("vendorMaster", vendorMasterSchema);
+const VendorMaster = mongoose.models.vendorMaster || mongoose.model<VendorMaster>("vendorMaster", vendorMasterSchema);
 
 export default VendorMaster;
