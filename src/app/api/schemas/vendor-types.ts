@@ -13,6 +13,6 @@ const vendorTypesSchema = new Schema<VendorTypes>({
 }, { timestamps: true });
 
 // Define and export your model
-const VendorTypes = mongoose.model<VendorTypes>("vendorTypes", vendorTypesSchema);
+const VendorTypes = mongoose.models.vendorTypes || mongoose.model<VendorTypes>("vendorTypes", vendorTypesSchema);
 
 export default VendorTypes;

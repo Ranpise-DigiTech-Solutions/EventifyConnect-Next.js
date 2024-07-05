@@ -11,6 +11,6 @@ const eventTypesSchema = new Schema<EventTypes>({
 }, { timestamps: true });
 
 // Define and export your model
-const EventTypes = mongoose.model<EventTypes>("eventTypes", eventTypesSchema);
+const EventTypes = mongoose.models.eventTypes || mongoose.model<EventTypes>("eventTypes", eventTypesSchema);
 
 export default EventTypes;

@@ -68,6 +68,6 @@ const hallBookingMasterSchema = new Schema<HallBookingMaster>({
 }, { timestamps: true });
 
 // Define and export your model
-const HallBookingMaster = mongoose.model<HallBookingMaster>("hallBookingMaster", hallBookingMasterSchema);
+const HallBookingMaster = mongoose.models.hallBookingMaster || mongoose.model<HallBookingMaster>("hallBookingMaster", hallBookingMasterSchema);
 
 export default HallBookingMaster;

@@ -53,6 +53,6 @@ const serviceProviderMasterSchema = new Schema<ServiceProviderMaster>({
 }, { timestamps: true });
 
 // Define and export your model
-const ServiceProviderMaster = mongoose.model<ServiceProviderMaster>("serviceProviderMaster", serviceProviderMasterSchema);
+const ServiceProviderMaster = mongoose.models.serviceProviderMaster || mongoose.model<ServiceProviderMaster>("serviceProviderMaster", serviceProviderMasterSchema);
 
 export default ServiceProviderMaster;

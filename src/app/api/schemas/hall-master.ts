@@ -95,6 +95,6 @@ const hallMasterSchema = new Schema<HallMaster>({
 }, { timestamps: true });
 
 // Define and export your model
-const HallMaster = mongoose.model<HallMaster>("hallMaster", hallMasterSchema);
+const HallMaster = mongoose.models.hallMaster || mongoose.model<HallMaster>("hallMaster", hallMasterSchema);
 
 export default HallMaster;

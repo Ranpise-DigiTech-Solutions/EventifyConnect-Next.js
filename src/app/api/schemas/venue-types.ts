@@ -11,6 +11,6 @@ const venueTypesSchema = new Schema<VenueTypes>({
 }, { timestamps: true });
 
 // Define and export your model
-const VenueTypes = mongoose.model<VenueTypes>("venueTypes", venueTypesSchema);
+const VenueTypes = mongoose.models.venueTypes || mongoose.model<VenueTypes>("venueTypes", venueTypesSchema);
 
 export default VenueTypes;
