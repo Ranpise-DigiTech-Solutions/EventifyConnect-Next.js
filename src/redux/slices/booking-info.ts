@@ -18,12 +18,12 @@ const userInfoSlice = createSlice({
     name: 'bookingInfo',
     initialState,
     reducers: {
-      setData(state, action: PayloadAction<{ key: any; value: any }>) {
+      setBookingInfoData(state, action: PayloadAction<{ key: any; value: any }>) {
         state[action.payload.key] = action.payload.value;
       },
     },
   });
 
-export const { setData } = userInfoSlice.actions;
+export const { setBookingInfoData } = userInfoSlice.actions;
 
 export default userInfoSlice.reducer;

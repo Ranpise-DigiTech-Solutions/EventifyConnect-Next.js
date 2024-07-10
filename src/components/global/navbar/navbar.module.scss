@@ -1,0 +1,183 @@
+// Import fonts
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&display=swap");
+
+// Colors
+$primary-color: #ff8000;
+$secondary-color: #333333;
+$menu-bg-color: rgba(26, 26, 26, 0.9);
+$primary-font: "Roboto", sans-serif;
+$mobile-menu-bg-color: rgb(17, 24, 39);
+$mobile-menu-text-color: rgb(156, 163, 175);
+
+// Mixins
+@mixin menu-item-style {
+  font-family: $primary-font;
+  font-weight: 500;
+  color: #ffffff;
+  transition: color 0.3s ease-in-out;
+
+  &:hover {
+    color: $primary-color;
+  }
+}
+
+.scrolled {
+  background-color: #302e2e !important;
+}
+
+.navbar__wrapper {
+  width: 100%;
+  top: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  background-color: rgba(26, 26, 26, 0.25);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  position: fixed;
+  z-index: 100;
+  color: #ffffff;
+  font-size: 16px;
+  padding: 0.5%;
+
+  .logo__wrapper {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    font-weight: 600;
+
+    .logo {
+      height: 3rem;
+      width: 3rem;
+      margin-left: 1.5rem;
+      margin-right: 0.5rem;
+    }
+
+    p {
+      margin-left: 0.3rem;
+      font-family: "Handlee", cursive;
+      font-size: 25px;
+      color: antiquewhite;
+    }
+
+    .title {
+      font-size: 20px;
+      color: antiquewhite;
+    }
+
+    .tagline {
+      font-size: 15px;
+      color: antiquewhite;
+    }
+  }
+
+  .tags__wrapper {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    height: 100%;
+
+    .tag {
+      margin: 1rem;
+      position: relative;
+      text-decoration: none;
+      transition: all 0.3s ease-in;
+      font-weight: 600;
+      @include menu-item-style;
+
+      &::before {
+        content: "";
+        position: absolute;
+        width: 0;
+        height: 2px;
+        bottom: -3px;
+        left: 0;
+        background-color: $primary-color;
+        transition: width 0.3s ease;
+      }
+
+      &:hover::before {
+        background-color: $primary-color;
+        width: 70%;
+      }
+    }
+
+    .userProfile {
+      margin-right: 1.5rem;
+    }
+
+    .button {
+      background-color: $primary-color;
+      color: #ffffff;
+      height: 60%;
+      margin: 1em;
+      font-weight: 600;
+      text-transform: capitalize;
+      margin-right: 2rem;
+      transition: all 0.3s ease-in;
+
+      &:hover {
+        background-color: darken($primary-color, 10%);
+      }
+    }
+
+    .userButton {
+      height: 60%;
+      margin: 0.75rem 2rem 0 0.5rem;
+    }
+  }
+
+  // Mobile view
+  @media (max-width: 768px) {
+    .MuiDrawer-paper {
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      padding: 1rem;
+    }
+
+    // Styles for when the user is not signed in
+    .MuiList-root {
+      .MuiListItem-root {
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+
+        &.Mui-selected {
+          background-color: rgba($primary-color, 0.2);
+        }
+      }
+    }
+
+    // Styles for when the user is signed in
+    .userProfileWrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+
+      .userProfileAvatar {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 1rem;
+      }
+
+      .userProfileMenuItems {
+        width: 100%;
+
+        .MuiListItem-root {
+          padding: 0.75rem 1rem;
+          border-radius: 0.5rem;
+          color: $mobile-menu-text-color;
+
+          .MuiListItemIcon-root {
+            color: $primary-color;
+          }
+
+          &.Mui-selected {
+            background-color: rgba($primary-color, 0.2);
+          }
+        }
+      }
+    }
+  }
+}

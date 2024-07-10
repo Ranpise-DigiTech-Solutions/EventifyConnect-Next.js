@@ -1,0 +1,70 @@
+.contactForm__container {
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+
+  .title {
+    /* Existing styles (if any) */
+
+    /* Optional: Add specific styles for the title, like font size, weight, or color */
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #ffffff;
+  }
+
+  .email {
+    /* Existing styles (if any) */
+
+    display: flex; /* Maintain flexbox layout for inputs */
+    flex-direction: column; /* Stack inputs vertically */
+    gap: 1rem; /* Add spacing between input fields */
+
+    input,
+    textarea {
+      /* Styles for all input fields (name, email, subject, message) */
+      background-color: transparent;
+      color: #ffffff;
+      background: none;
+      width: 100%;
+      padding: 1rem;
+      border: 1px solid white;
+      border-radius: 0.5rem;
+      font-size: 16px; /* Adjust font size if needed */
+    }
+
+    textarea {
+      /* Additional styles for the message textarea */
+      min-height: 80px; /* Set minimum height for multi-line messages */
+      resize: vertical; /* Allow users to resize the message box */
+    }
+  }
+
+  .agreement {
+    /* Optional: Adjust spacing between checkbox and text */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    p {
+      /* Existing styles (if any) */
+      font-size: 14px; /* Adjust font size if needed */
+    }
+  }
+
+  .submitBtn {
+    /* Optional: Customize button appearance (background, hover effects, etc.) */
+    background-color: #007bff; /* Example blue button background */
+    padding: 1rem 2rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    margin-top: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    color: #ffffff;
+
+    &:hover {
+      background-color: #0069d9; /* Darker blue on hover */
+    }
+  }
+}

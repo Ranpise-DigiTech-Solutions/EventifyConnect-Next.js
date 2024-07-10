@@ -1,19 +1,23 @@
-"use client"
+import {
+  SearchBar,
+  Packages,
+  Promotion,
+  Destinations,
+  AboutUs,
+  Blogs,
+  Stories,
+} from "@/components/pages/home";
 
-import Image from "next/image";
-import { Provider } from 'react-redux';
-
-export default function Home() {
+export default function HomePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24 bg-cyan-200">
-      <Image
-        src="/vercel.svg"
-        alt="Vercel Logo"
-        className="dark:invert"
-        width={100}
-        height={24}
-        priority
-      />
-    </main>
+    <>
+      <Promotion />
+      <Destinations />
+      <SearchBar />
+      <Packages />
+      <AboutUs />
+      <Stories />
+      <Blogs />
+    </>
   );
 }

@@ -1,0 +1,131 @@
+.card__container {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  cursor: pointer;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease-in-out;
+
+  .clip {
+    border-radius: 2rem;
+    height: 100%;
+    width: 100%;
+    z-index: 1;
+    object-fit: cover;
+  }
+
+  .overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3));
+    border-radius: 2rem;
+  }
+
+  .wrapper {
+    border-radius: 2rem;
+    z-index: 3;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    .tags {
+      button {
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        font-weight: 500;
+        text-align: center;
+        font-size: 17px;
+        margin-right: 1rem;
+      }
+
+      .discount {
+        background-color: #cb4822;
+      }
+
+      .new {
+        background-color: #009a70;
+      }
+    }
+
+    .contents {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: flex-start;
+
+      .stars {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+        margin-bottom: 10px;
+
+        .icons {
+          margin-right: 1rem;
+
+          .bx-icon {
+            color: #ffc400;
+            margin-right: 4px;
+          }
+
+          .inactive {
+            color: #ffffff;
+          }
+        }
+
+        .reviews {
+          text-transform: capitalize;
+          color: #ffffff;
+        }
+      }
+
+      .title {
+        text-transform: capitalize;
+        font-size: 28px;
+        font-weight: 900;
+        margin-bottom: 10px;
+        transition: all 0.3s ease-in;
+
+        &:hover {
+          color: rgb(214, 107, 0);
+        }
+      }
+
+      .description {
+        color: rgba(255, 255, 255, 0.65);
+        margin-bottom: 12px;
+        text-transform: lowercase;
+        font-size: 17px;
+        font-style: italic;
+      }
+
+      .expiry__date {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: flex-start;
+
+        .icon {
+          margin-right: 1rem;
+        }
+
+        .deadline {
+          color: rgba(255, 255, 255, 0.65);
+          text-transform: lowercase;
+          font-size: 17px;
+        }
+      }
+    }
+  }
+}
