@@ -1,0 +1,70 @@
+.gallery__container {
+  width: 100%;
+  padding: 0 6.5rem;
+
+  .gallery {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 1rem;
+    color: white;
+    padding-bottom: 2rem;
+
+    .images-container {
+      flex: 1;
+      height: auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem 1rem;
+      margin: 2rem;
+    }
+
+    .image {
+      width: calc(100% - 0.5rem);
+      height: 15rem;
+      cursor: pointer;
+      position: relative;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 8px;
+      }
+    }
+
+    .MuiPagination-ul {
+      justify-content: center;
+    }
+
+    .css-n19jet-MuiTabs-root .MuiTabs-flexContainer {
+      background-color: orange;
+      border-top-right-radius: 1rem;
+      border-top-left-radius: 1rem;
+    }
+  }
+
+  @media only screen and (max-width: 767px) {
+    padding: 0 1rem;
+
+    .gallery {
+      .images-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem 1rem;
+        margin: 2rem;
+      }
+
+      .image {
+        width: calc(100% - 0.5rem);
+        height: 10rem;
+        cursor: pointer;
+        position: relative;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 8px;
+        }
+      }
+    }
+  }
+}

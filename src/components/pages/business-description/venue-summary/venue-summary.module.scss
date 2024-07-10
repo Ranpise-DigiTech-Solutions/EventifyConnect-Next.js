@@ -1,0 +1,35 @@
+.venue-summary {
+    border: 1px solid #ccc;
+    border-radius: 10px; 
+    padding: 10px;
+    box-sizing: border-box;
+    width: 87%;
+    margin: auto;
+  
+    .venue-details-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between; /* Adjust alignment */
+  
+      .venue-details {
+        width: calc(33.33% - 20px); 
+        margin-bottom: 20px; 
+        border: 1px solid #ccc; 
+        border-radius: 10px; 
+        padding: 10px;
+        box-sizing: border-box; 
+  
+        @media (max-width: 768px) {
+          width: calc(50% - 20px); /* Two items per row */
+        }
+      }
+    }
+  
+    @media only screen and (max-width: 767px) {
+      .venue-summary {
+        width: 100%;
+      }
+    }
+  
+  }
+  

@@ -6,3 +6,4 @@ export { default as DestinationsCard } from './destinations-card/destinations-ca
 export { default as NavigationDots } from './navigation-dots';
 export { default as ScrollToTop } from './scroll-to-top';
 export { default as PackagesCard } from './packages-card/packages-card';
+export { default as TestimonialsBox } from './testimonials-box/testimonials-box';
