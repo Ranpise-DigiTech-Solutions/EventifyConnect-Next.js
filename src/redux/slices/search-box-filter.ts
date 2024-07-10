@@ -15,12 +15,12 @@ const userInfoSlice = createSlice({
     name: 'searchBoxFilter',
     initialState,
     reducers: {
-      setData(state, action: PayloadAction<{ key: any; value: any }>) {
+      setSearchBoxFilterData(state, action: PayloadAction<{ key: any; value: any }>) {
         state[action.payload.key] = action.payload.value;
       },
     },
   });
 
-export const { setData } = userInfoSlice.actions;
+export const { setSearchBoxFilterData } = userInfoSlice.actions;
 
 export default userInfoSlice.reducer;

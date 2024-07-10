@@ -1,0 +1,39 @@
+.cancellationPolicy__container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  line-height: 30px;
+  text-wrap: wrap;
+
+  padding: 3rem 4rem;
+  margin-top: 4rem;
+  background-color: var(--secondary-color);
+
+  .heading {
+    width: 100%;
+    font-size: 26px;
+    font-weight: 600;
+    text-decoration: none;
+    font-style: normal;
+    text-transform: capitalize;
+    text-align: center;
+    color: var(--black-color);
+
+    margin-bottom: 2rem;
+  }
+
+  .summary {
+    width: 100%;
+    margin-bottom: 2rem;
+    line-height: 30px;
+    font-size: 15px;
+    font-weight: 400;
+    text-decoration: none;
+    text-transform: none;
+    font-style: normal;
+    text-align: start;
+  }
+}

@@ -20,7 +20,7 @@ const userInfoSlice = createSlice({
     name: 'userInfo',
     initialState,
     reducers: {
-      setData(state, action: PayloadAction<{ key: any; value: any }>) {
+      setUserInfoData(state, action: PayloadAction<{ key: any; value: any }>) {
         state[action.payload.key] = action.payload.value;
       },
       toggleUserAuthStateChangeFlag(state) {
@@ -32,6 +32,6 @@ const userInfoSlice = createSlice({
     },
   });
 
-export const { setData, toggleUserAuthStateChangeFlag, toggleUserDataUpdateFlag } = userInfoSlice.actions;
+export const { setUserInfoData, toggleUserAuthStateChangeFlag, toggleUserDataUpdateFlag } = userInfoSlice.actions;
 
 export default userInfoSlice.reducer;

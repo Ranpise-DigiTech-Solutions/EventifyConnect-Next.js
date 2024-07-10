@@ -1,5 +1,4 @@
-// // slices/userInfoSlice.ts
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 const initialState: any = {
   countries: {
@@ -34,9 +33,8 @@ const initialState: any = {
   },
 };
 
-// Define the slice with initial state and reducers
 const userInfoSlice = createSlice({
-  name: "data",
+  name: 'userInfo',
   initialState,
   reducers: {
     // Add reducers for countries
@@ -109,7 +107,7 @@ const userInfoSlice = createSlice({
       state.eventTypes.error = action.payload;
     },
 
-    // Add reducers for event types
+    // Add reducers for vendor types
     fetchVendorTypesRequest(state) {
       state.vendorTypes.loading = true;
       state.vendorTypes.error = null;
