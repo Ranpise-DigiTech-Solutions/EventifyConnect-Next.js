@@ -4,3 +4,8 @@ export { default as Testimonials } from './testimonials/testimonials';
 export { default as VenueSummary } from './venue-summary/venue-summary';
 export { default as HallInformation } from './hall-information/hall-information';
 export { default as Gallery } from './gallery/gallery';
+export { default as BookingDetailsDialog } from './booking-details-dialog/booking-details-dialog';
+export { default as AdditionalVendorDetails } from './additional-vendor-details/additional-vendor-details';
+export { default as AvailabilityCalendar } from './availability-calendar/availability-calendar';
+export { default as HallDescription } from './hall-description/hall-description';
+export { default as AboutHall } from './about-hall/about-hall';

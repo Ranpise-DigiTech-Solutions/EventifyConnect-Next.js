@@ -1,0 +1,201 @@
+.bookingHistory__container {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--medium-gray-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  user-select: none;
+
+  padding: 3rem 3rem 1rem;
+  margin-top: 3rem;
+
+  .wrapper {
+    width: 100%;
+
+    .secondaryNavbar {
+      width: 100%;
+
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      gap: 2rem;
+
+      margin-bottom: 3rem;
+
+      .items-list {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 1.5rem;
+
+        .item {
+          cursor: pointer;
+          position: relative;
+          color: var(--gray-color);
+
+          &:hover {
+          }
+        }
+
+        .currentTab {
+          color: var(--pink-color);
+
+          &::after {
+            position: absolute;
+            content: "";
+            bottom: -0.5rem;
+            left: 0;
+            height: 1.5px;
+            width: 75%;
+            background-color: var(--pink-color);
+            // opacity: 0;
+            transition: width 0.3s ease-out;
+          }
+
+          &:hover::after {
+            width: 75%;
+            opacity: 1;
+          }
+        }
+      }
+
+      .calendar {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        gap: 1rem;
+        align-items: center;
+
+        .icon {
+          color: var(--pink-color);
+          cursor: pointer;
+        }
+
+        .datePicker {
+          width: 15rem;
+        }
+      }
+    }
+
+    .tagList {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      gap: 2rem;
+      border: 1px solid var(--gray-border-color);
+      padding: 0.5rem 1rem;
+      background-color: #8c6a51;
+
+      margin-bottom: 2rem;
+
+      .tag {
+        flex: 1;
+        font-size: 14px;
+        font-weight: 900;
+        text-align: center;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #fff;
+        cursor: pointer;
+
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+
+        &:nth-child(1) {
+          flex: 0.5;
+        }
+
+        &:nth-child(8) {
+          flex: 0.5;
+        }
+      }
+    }
+
+    .bookings-wrapper {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+
+      .bookingItem {
+        width: 100%;
+
+        padding: 0.5rem 1rem;
+        margin-bottom: 1rem;
+        transition: transform 0.3s ease;
+        border: 1.5px solid var(--gray-border-color);
+        // background-color:  #46744e ;
+
+        &:hover {
+          transform: translateY(-5px);
+          color: #00ffff;
+        }
+
+        // &:nth-child(odd) {
+        //   background-color: #34495E; // Alternate background color for odd rows
+        // }
+
+        .items-list {
+          width: 100%;
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+          gap: 2rem;
+
+          .item {
+            flex: 1;
+            font-size: 15px;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
+            .menuIcon {
+              color: var(--secondary-color);
+            }
+
+            &:nth-child(1) {
+              flex: 0.5;
+            }
+
+            &:nth-child(8) {
+              flex: 0.5;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .pagination {
+    width: 100%;
+    color: var(--secondary-color);
+  }
+
+  .pagination .MuiSvgIcon-root {
+    fill: white; /* Set icon color to white */
+  }
+
+  /* Override background color for active elements */
+  .pagination .Mui-selected {
+    background-color: rgba(
+      255,
+      255,
+      255,
+      0.1
+    ); /* Example: Light gray background */
+  }
+}

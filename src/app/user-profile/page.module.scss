@@ -1,0 +1,64 @@
+.MuiAppBar-root {
+  background-color: #1e1e1e;
+}
+
+.profilePage__container {
+  background-color: var(--primary-color);
+  color: #ffffff;
+
+  .userProfileDrawer__container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    font-family: var(--font-family-4) !important;
+    background-color: var(--primary-color) !important;
+    color: #ffffff;
+
+    .list__wrapper {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      overflow: hidden;
+      gap: 1rem;
+
+      .logo {
+        height: 2rem;
+        width: 2rem;
+      }
+
+      .icon {
+        color: var(--blue-color);
+      }
+
+      .logoText {
+        color: #ffffff;
+        font-size: 20px;
+        margin-left: -0.5rem;
+      }
+
+      .listItemText {
+        color: #ffffff;
+        font-size: 17px;
+      }
+    }
+
+    .divider {
+      width: 100%;
+      height: 2px;
+      background-color: #b3b3b3;
+      // margin: 0.5rem 0;
+    }
+  }
+
+  .drawerTitle {
+    font-size: 20px;
+    color: var(--blue-color);
+    font-weight: 600;
+  }
+}

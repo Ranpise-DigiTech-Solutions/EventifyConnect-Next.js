@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import connectDB from "@/lib/db/mongodb";
 import { customerMaster } from "@/app/api/schemas";
+import mongoose from "mongoose";
 
 export async function GET(
   req: NextRequest,
@@ -49,7 +50,7 @@ export async function PATCH(
     const customerId = params.customerId;
     const updatedData = await req.json();
 
-    if (!customerId) {
+    if (!customerId || !mongoose.Types.ObjectId.isValid(customerId)) {
       return new Response(JSON.stringify({ message: "Invalid customerId!" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },

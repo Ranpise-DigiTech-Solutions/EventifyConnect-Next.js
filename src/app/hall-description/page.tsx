@@ -4,8 +4,20 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 
-import { Footer } from "@/components/global";
-import { FAQ, Gallery, HallInformation, Location, Testimonials, VenueSummary } from "@/components/pages/business-description";
+import { Navbar, Footer } from "@/components/global";
+import {
+  FAQ,
+  Gallery,
+  HallInformation,
+  Location,
+  Testimonials,
+  VenueSummary,
+  AvailabilityCalendar,
+  AdditionalVendorDetails,
+  BookingDetailsDialog,
+  HallDescription,
+  AboutHall,
+} from "@/components/pages/business-description";
 import { LoadingScreen } from "@/components/sub-components";
 import styles from "./page.module.scss";
 
@@ -73,25 +85,32 @@ const HallDescriptionPage = (props: Props) => {
 
   return (
     <div>
+      <Navbar setIsLoading={setIsLoading} />
+      <BookingDetailsDialog
+        open={openBookingDetailsDialog}
+        handleClose={handleBookingDetailsDialogClose}
+        hallData={hallData}
+        serviceProviderData={serviceProviderData}
+      />
       <div className={styles.DescriptionPage__container}>
         <div className={styles.main__wrapper}>
           <div className={styles.sub__wrapper}>
             <div className={styles.column1}>
-              {/* <HallDescription hallData={hallData} />
+              <HallDescription hallData={hallData} />
               <AboutHall />
-              <AvailabilityCalendar hallData={hallData} /> */}
+              <AvailabilityCalendar hallData={hallData} />
             </div>
             <div className={styles.column2}>
-              {/* <AdditionalVendorDetails
+              <AdditionalVendorDetails
                 handleBookingDetailsDialogOpen={handleBookingDetailsDialogOpen}
                 hallData={hallData}
-              /> */}
+              />
             </div>
           </div>
           <Gallery />
           <HallInformation />
-          <VenueSummary /> 
-          <Testimonials /> 
+          <VenueSummary />
+          <Testimonials />
           <Location />
           <FAQ />
         </div>

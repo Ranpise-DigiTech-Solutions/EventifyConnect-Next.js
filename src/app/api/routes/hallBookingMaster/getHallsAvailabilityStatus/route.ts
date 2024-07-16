@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  let eventObjectId; // Event Type Object ID in Str
+  let eventObjectId = null; // Event Type Object ID in Str
 
   function isObjectIdFormat(str: string) {
     return /^[0-9a-fA-F]{24}$/.test(str);
@@ -47,8 +47,6 @@ export async function GET(req: NextRequest) {
     if (!ObjectId.isValid(eventObjectId)) {
       eventObjectId = null;
     }
-  } else {
-    eventObjectId = null;
   }
 
   const sortCriteria = getSortCriteria(filter);
@@ -185,7 +183,7 @@ export async function GET(req: NextRequest) {
     ]);
 
     // Group bookings by hall
-    let bookingsByHall: Array<any>;
+    let bookingsByHall: Array<any> = [];
 
     if (bookings && bookings.length !== 0) {
       bookings.forEach((booking: any) => {
@@ -229,7 +227,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.log(error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
+    return new Response(JSON.stringify({ error: error }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

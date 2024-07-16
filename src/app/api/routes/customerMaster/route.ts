@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
         });
     }
 
-    const newDocument = new customerMaster(req.body);
+    const newDocument = new customerMaster(postBody);
 
     if (!newDocument) {
       return new Response(JSON.stringify({ message: "New document couldn't be created!" }), {
