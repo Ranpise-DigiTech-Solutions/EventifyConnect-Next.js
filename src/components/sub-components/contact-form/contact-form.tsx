@@ -18,33 +18,7 @@ const ContactFormSubComponent = ({ setIsSuccess }: Props) => {
     event.preventDefault();
     setIsLoading(true);
 
-    // EmailJS sendForm method
-    emailjs
-      .sendForm(
-        process.env.VITE_EMAILJS_SERVICE_ID || "",
-        process.env.VITE_EMAILJS_TEMPLATE_ID1 || "",
-        event.target as HTMLFormElement,
-        process.env.VITE_EMAILJS_API_PUBLIC_KEY || ""
-      )
-      .then(
-        () => {
-          setIsSuccess(true);
-          if (form.current) {
-            form.current.reset(); // Reset the form fields
-          }
-          console.log("SUCCESS!");
-
-          setIsLoading(false);
-          // Hide the success message after 3 seconds
-          setTimeout(() => {
-            setIsSuccess(false);
-          }, 3000);
-        },
-        (error) => {
-          setIsLoading(false);
-          console.log("FAILED...", error.text);
-        }
-      );
+    
   };
 
   return (

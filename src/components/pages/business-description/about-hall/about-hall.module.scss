@@ -1,0 +1,37 @@
+.aboutHall__container {
+    /* background-color: #FFD085; */
+    width: 100%;
+    // padding: 0 3rem; 
+    border-radius: 1rem;
+  
+    // Define styles for container
+    .About-container {
+      // max-width: 1000px;
+      // margin: auto 0;
+      padding: 2rem;
+  
+      // Define styles for headings
+      h1 {
+        font-weight: 800;
+        font-size: 1.7rem;
+      }
+  
+      p{
+        // margin-right: 3rem;
+      }
+    }
+  
+    @media only screen and (max-width: 767px) {
+  
+      margin-top: 2.5rem;
+  
+      .About-container {
+        padding: 0.25rem;
+  
+        h1 {
+          font-size: 22px;
+        }
+      }
+    }
+  
+  }

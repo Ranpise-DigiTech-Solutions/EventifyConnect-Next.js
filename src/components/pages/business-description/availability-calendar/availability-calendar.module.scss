@@ -1,0 +1,436 @@
+.availabilityCalendar__wrapper {
+  width: 100%;
+  // padding: 4rem 3rem 2rem 3rem;
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  user-select: none;
+
+  .heading {
+    width: 100%;
+
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+
+    font-size: 27.2px;
+    font-weight: 800;
+    text-transform: capitalize;
+    text-decoration: none;
+    font-style: normal;
+
+    padding-left: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .contents__wrapper {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    .seven-day-date-picker {
+      display: flex;
+      align-items: center;
+
+      margin-bottom: 2rem;
+
+      .arrow {
+        cursor: pointer;
+        padding: 0.75rem;
+        border-radius: 999px;
+        // background-color: #f7f7f7;
+        // border: 1.5px solid #cccccc;
+        color: #333333;
+        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2); /* Add shadow */
+        transition: box-shadow 0.3s ease;
+
+        &:hover {
+          box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
+        }
+      }
+
+      .date-range {
+        display: flex;
+        align-items: center;
+        margin: 0 2rem;
+        font-size: 17px;
+        font-weight: 600;
+        font-family: var(--font-family-2);
+      }
+
+      .date-separator {
+        padding: 0 1rem;
+      }
+
+      .hover-date:hover {
+        background-color: rgba(
+          0,
+          0,
+          255,
+          0.2
+        ); /* Adjust hover color as needed */
+      }
+
+      .selected-date {
+        background-color: rgba(
+          0,
+          128,
+          0,
+          0.2
+        ); /* Adjust selected color as needed */
+      }
+    }
+
+    .calendar {
+      width: 100%;
+
+      .days__wrapper {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+
+        margin-bottom: 0.5rem;
+
+        .currentSelection {
+          background-color: rgba($color: #f4c542, $alpha: 1) !important;
+        }
+
+        .sub-wrapper {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          width: 6rem;
+          background-color: #4285f4;
+          color: #ffffff;
+          font-weight: 600;
+          padding: 0.5rem 0;
+
+          margin: 0 0.5rem;
+
+          &:nth-child(1) {
+            width: 1.2rem;
+            background-color: #ffffff;
+          }
+        }
+      }
+
+      .content__wrapper {
+        width: 100%;
+        height: 55vh;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        overflow-y: scroll;
+
+        .timeSlots {
+          height: 100%;
+          // margin: 0 0.5rem 0 1.5rem;
+
+          .timeSlots__wrapper {
+            width: 3.25rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #4285f4;
+            font-weight: 600;
+            color: #ffffff;
+
+            .time-slot {
+              width: 100%;
+              height: 3rem;
+              display: flex;
+              align-items: flex-start;
+              justify-content: center;
+              // height: 50px; /* Set the height of each time slot */
+            }
+          }
+        }
+
+        .availableSlots__wrapper {
+          height: 100%;
+          margin: 0 0.5rem;
+          // padding: 0 0.3rem;
+          position: relative;
+
+          .currentSelection {
+            border: 2.5px dashed #f4c542;
+          }
+
+          .timeSlots__wrapper {
+            width: 6rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+
+            .time-slot {
+              width: 100%;
+              height: 3rem;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              // background-color: #98FB98; /* Lighter gray shade */
+              // background-color: rgb(0, 0, 0, 0.07);
+              background-color: rgba($color: #4285f4, $alpha: 0.15);
+              transition: 0.3s all ease-out;
+              cursor: pointer;
+              position: relative;
+
+              .unAvailableSlot {
+                height: 3rem;
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                // background-color: #000000;
+                background-color: rgba($color: #ff0000, $alpha: 1) !important;
+                // color: rgb(255, 255, 255, 0.6);
+                color: #ffffff !important;
+                cursor: not-allowed !important;
+                z-index: 10;
+              }
+
+              .availableSlot {
+                width: 100%;
+                height: 3rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                text-transform: uppercase;
+                font-size: 15px;
+                color: #ffffff;
+                font-weight: 500;
+                background-color: #36c87f;
+                opacity: 0;
+                transition: all 0.3s ease-out;
+                box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+                transform: translateY(-2px);
+              }
+
+              .selectedSlot {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                display: none;
+                opacity: 0;
+                z-index: 1;
+
+                .icon {
+                  font-size: 18px;
+                  font-weight: 600;
+                  color: #ffffff;
+                }
+              }
+
+              .expiredSlot {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                display: none;
+                opacity: 0;
+                z-index: 1;
+                cursor: not-allowed;
+
+                .icon {
+                  font-size: 28px;
+                  font-weight: 600;
+                  color: #ffffff;
+                }
+              }
+
+              &:hover {
+                .availableSlot {
+                  display: flex;
+                  opacity: 1;
+                  justify-content: center;
+                  align-items: center;
+                  transform: translateY(-1px);
+                }
+              }
+            }
+
+            .expiredTimeSlot {
+              background-color: rgba($color: #cccccc, $alpha: 0.75) !important;
+
+              &:hover {
+                .expiredSlot {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  opacity: 1;
+                  z-index: 10;
+                }
+                .availableSlot {
+                  display: none;
+                }
+              }
+            }
+
+            .selectedTimeSlot {
+              background-color: #36c87f !important;
+
+              .selectedSlot {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                opacity: 1;
+              }
+
+              &:hover {
+                .availableSlot {
+                  opacity: 0 !important;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .unavailableMessageInfo__wrapper {
+      width: 100%;
+      height: 55vh;
+
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border: 2px solid #cccccc;
+
+      color: #999999;
+
+      .icon {
+        margin-bottom: 1.5rem;
+        font-size: 2.5rem;
+      }
+
+      .title {
+        font-size: 18px;
+        font-weight: 600;
+        font-family: var(--font-family-2);
+
+        margin-bottom: 0.5rem;
+      }
+
+      .desc {
+        font-size: 16px;
+        font-weight: 400;
+        font-style: normal;
+        text-decoration: none;
+        text-transform: none;
+      }
+    }
+
+    // .scrollBar__wrapper {
+    //   width: 100%;
+    //   height: 50vh; // cop
+    //   display: flex;
+    //   flex-direction: column;
+    //   justify-content: center;
+    //   align-items: center;
+    // }
+  }
+
+  @media only screen and (max-width: 767px) {
+    padding-bottom: 1rem;
+
+    .heading {
+      font-size: 22px;
+      padding-left: 0;
+    }
+
+    .contents__wrapper {
+      .seven-day-date-picker {
+        .arrow {
+          width: 1.5rem;
+          height: 1.5rem;
+
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          color: #000000;
+
+          padding: 0.5rem;
+
+          .icon {
+            z-index: 10;
+            color: #000000;
+          }
+        }
+
+        .date-range {
+          margin: 0 1rem;
+          font-size: 15px;
+        }
+      }
+
+      .calendar {
+        overflow-x: hidden;
+
+        .days__wrapper {
+          .sub-wrapper {
+            width: 2.25rem;
+            margin: 0 0.15rem;
+
+            .sub-title {
+              width: 100%;
+              height: 100%;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              flex-wrap: wrap;
+              text-wrap: wrap;
+
+              font-size: 10px;
+            }
+
+            .title {
+              display: none;
+            }
+          }
+        }
+
+        .content__wrapper {
+          height: 40vh;
+
+          .timeSlots {
+            .timeSlots__wrapper {
+              width: 2rem;
+              width: 100%;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+
+              .time-slot {
+                font-size: 10px;
+              }
+            }
+          }
+
+          .availableSlots__wrapper {
+            margin: 0 0.15rem;
+
+            .timeSlots__wrapper {
+              width: 2.25rem !important;
+            }
+          }
+        }
+      }
+    }
+  }
+}

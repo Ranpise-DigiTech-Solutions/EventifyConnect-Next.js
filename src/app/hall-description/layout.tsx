@@ -1,6 +1,6 @@
 import React from 'react';
 
-const HallDescription = ({ children } : { children: React.ReactNode }) => {
+const HallDescriptionLayout = ({ children } : { children: React.ReactNode }) => {
     return (
         <main>
             {children}
@@ -8,4 +8,4 @@ const HallDescription = ({ children } : { children: React.ReactNode }) => {
     )
 }
 
-export default HallDescription;
+export default HallDescriptionLayout;

@@ -1,0 +1,171 @@
+// Define styles for description component
+.hallDescription__container {
+    width: 100%;
+    // padding: 3rem 3rem 10rem 3rem;
+    padding-bottom: 10rem;
+    position: relative;
+  
+    // Define styles for slider
+    .slider__wrapper {
+      width: 100%;
+      height: 30rem;
+      position: relative;
+      overflow: hidden;
+      border-radius: 15px;
+      margin: 0;
+      box-shadow: 0 4px 8px rgba(0.4, 0.4, 0.4, 0.4);
+  
+      .carousel-container {
+        width: 100%;
+        height: 100%;
+        
+        img{
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+  
+    }
+  
+    // Define styles for quick info
+    .quickinfo {
+      position: absolute;
+      background-color: #fff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      bottom: 1rem;
+      left: 5rem;
+      right: 5rem;
+      z-index: 1;
+      border-radius: 1rem;
+      padding: 1.5rem;
+  
+      // Define styles for headings
+      h2 {
+        font-size: 2rem;
+        font-weight: 500;
+      }
+  
+      .stars-container {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+      }
+  
+      // Define styles for location
+      .location {
+        display: flex; // Display as flex container
+        align-items: center; // Align items vertically
+        gap: 5px; // Add some space between icon and text
+  
+        // Define styles for link
+        a {
+          text-decoration: none;
+          color: blue; // Inherit text color
+          display: flex; // Display as flex container
+          align-items: center; // Align items vertically
+          gap: 10px;
+        }
+      }
+    
+      .menu__wrapper {
+        height: 1.5rem;
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+  
+        margin-top: 1rem;
+  
+        .menuOption {
+          display: flex;
+          flex-direction: row;
+          justify-content: center;
+          align-items: center;
+  
+          cursor: pointer;
+  
+          .icon {
+            margin-right: 0.3rem;
+            width: 20px;
+          }
+  
+          p {
+  
+          }
+        }
+  
+        .verticalLine {
+          height: 90%;
+          width: 1px;
+          background-color: #cccccc;
+        }
+      }
+  
+      @media only screen and (max-width: 767px) {
+        bottom: -1rem;
+        left: 1rem;
+        right: 1rem;
+        z-index: 1;
+        border-radius: 1rem;
+        padding: 1rem;
+  
+        h2 {
+          font-size: 1.25rem;
+        }
+  
+        .location {
+          margin: 0.5rem 0;
+  
+          a {
+            font-size: 14px;
+          }
+        }
+  
+        .stars-container {
+          display: none;
+  
+          .stars-icon {
+            // height: 2rem;
+          }
+        }
+  
+        .menu__wrapper {
+          margin-top: 1.5rem;
+    
+          .menuOption {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+    
+            cursor: pointer;
+    
+            .icon {
+              margin-right: 0.3rem;
+              width: 18px;
+            }
+    
+            p {
+              display: none;
+            }
+          }
+    
+          .verticalLine {
+            height: 90%;
+            width: 1px;
+            background-color: #cccccc;
+          }
+        }
+      }  
+    }
+  
+    @media only screen and (max-width: 767px) {
+      padding-bottom: 5rem;
+    }
+  
+  }
+  
