@@ -65,6 +65,7 @@ const BookingDetailsDialogComponent = ({
   const [formErrorUpdateFlag, setFormErrorUpdateFlag] = useState(false); // error update flag for form
   const [bookingConfirmationScreen, setBookingConfirmationScreen] =
     useState(false); // toggle booking confirmation screen
+    const [alertDialog, setAlertDialog] = useState(false); // to show error messages 
 
   // type of react select options
   interface ReactSelectOptionType {
@@ -187,52 +188,6 @@ const BookingDetailsDialogComponent = ({
     roomsCount: "",
     vehiclesCount: "",
   });
-
-  const sendConfirmationEmail = (bookingId: string, type: string) => {
-    // Configure the email service, template, and user ID
-    const service_id = "service_2fup20o";
-    let template_id;
-    if (type == "sendtocustomer") {
-      template_id = "template_l4np6ir";
-    } else {
-      template_id = "template_4t80nyc";
-    }
-    const user_id = "0oIWr5bjMsZhioM54";
-    const customerEmail = userInfoStore.userDetails.Document.customerEmail;
-    const vendorEmail = serviceProviderData.vendorEmail;
-    // Prepare the email parameters
-    const emailParams = {
-      service_id: service_id,
-      template_id: template_id,
-      user_id: user_id,
-      template_params: {
-        // Add the relevant details from the `bookingDetails` object and other data sources
-        to_email: customerEmail, // Replace with the recipient's email
-        vendor_email: vendorEmail, // Replace with the sender's email
-        vendor_name: serviceProviderData.vendorName,
-        to_name: userInfoStore.userDetails.Document.customerName,
-        bookingId: bookingId,
-        hallName: hallData.hallName,
-      },
-    };
-
-    // Send the email
-    emailjs
-      .send(
-        emailParams.service_id,
-        emailParams.template_id,
-        emailParams.template_params,
-        emailParams.user_id
-      )
-      .then((response) => {
-        console.log("Email sent successfully", response.status, response.text);
-        // Handle successful email send
-      })
-      .catch((error) => {
-        console.error("Failed to send email", error);
-        // Handle email send failure
-      });
-  };
 
   const handleSubmissionConfirmationDialogOpen = () => {
     setSubmissionConfirmationDialog(true);
@@ -377,7 +332,7 @@ const BookingDetailsDialogComponent = ({
   };
 
   const handleFormSubmit = async () => {
-    // setIsLoading(true);
+    setIsLoading(true);
     try {
       const parsedStartDateObject: Date | null = parseDate(
         bookingInfoStore.bookingStartDate,
@@ -445,13 +400,12 @@ const BookingDetailsDialogComponent = ({
 
       const response = await axios.post(`/api/routes/bookingMaster/`, postData);
       console.log(response);
-      sendConfirmationEmail(response.data?.documentId, "sendtocustomer");
-      //sendConfirmationEmail(response.data?.documentId,"sendtovendor");
-
+      setIsLoading(false);
       handleBookingDetailsInfo("bookingId", response.data?.documentId);
     } catch (error) {
       console.log(error);
       setIsLoading(false);
+      setAlertDialog(true);
     }
 
     setIsLoading(false);
@@ -475,6 +429,26 @@ const BookingDetailsDialogComponent = ({
           <LoadingScreen />
         </div>
       )}
+      <Dialog
+          open={alertDialog}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">
+            {"Unexpected Error Occurred"}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              An unexpected error occurred while processing your request. Please
+              try again later.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => {setAlertDialog(false); handleClose();}} autoFocus>
+              Agree
+            </Button>
+          </DialogActions>
+        </Dialog>
       <Dialog
         open={submissionConfirmationDialog}
         onClose={handleSubmissionConfirmationDialogClose}

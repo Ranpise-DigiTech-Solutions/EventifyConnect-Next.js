@@ -36,6 +36,7 @@ import { BookingDetailsDialog, BookingHistory, UserProfile } from '@/components/
 import { setUserInfoData } from '@/redux/slices/user-info';
 import { LoadingScreen } from '@/components/sub-components';
 import Link from 'next/link';
+import { useSearchParams } from "next/navigation";
 import Image from 'next/image';
 import styles from './page.module.scss';
 
@@ -51,7 +52,7 @@ const UserProfilePage = ({ window }: Props) => {
 
   const dispatch = useAppDispatch();
   const userInfoStore = useAppSelector((state) => state.userInfo);
-  const searchParams = new URLSearchParams(location.search);
+  const searchParams = useSearchParams(); 
 
   const [user, setUser] = useState<any>(null);
   const [hallData, setHallData] = useState<any>(null);

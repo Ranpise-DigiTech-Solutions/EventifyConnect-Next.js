@@ -43,3 +43,31 @@ export async function POST(req: NextRequest) {
     });
   }
 }
+
+
+export async function GET(req: NextRequest) {
+  const filter = {};
+
+  try {
+    await connectDB(); // check database connection
+
+    const vendorDetails = await vendorMaster.find(filter);
+
+    if (!vendorDetails) {
+      return new Response(JSON.stringify({ message: "No venue details were found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify(vendorDetails), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}

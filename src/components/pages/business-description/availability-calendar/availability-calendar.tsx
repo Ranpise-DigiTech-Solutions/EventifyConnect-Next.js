@@ -536,7 +536,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
         );
 
         const response = await axios.get(
-          `/api/routes/hallBookingMaster/getHallBookings/?hallId=${hallData._id}&bookingStartDateTimestamp=${parsedStartDateObject}&bookingEndDateTimestamp=${parsedEndDateObject}`
+          `/api/routes/hallBookingMaster/getHallBookingsCount/?hallId=${hallData._id}&bookingStartDateTimestamp=${parsedStartDateObject}&bookingEndDateTimestamp=${parsedEndDateObject}`
         );
 
         const bookings = response.data;

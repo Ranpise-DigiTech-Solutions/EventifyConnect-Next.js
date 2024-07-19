@@ -95,9 +95,10 @@ const UserAuthDialogComponent = ({
   const [otpVerificationForm, setOtpVerificationForm] = useState(false); // to display form requesting OTP for verification
   const [passwordVerificationForm, setPasswordVerificationForm] =
     useState(false); // to display form requesting password for verification
-  const [userType, setUserType] = useState("CUSTOMER"); // "CUSTOMER" or "VENDOR"
-  const [authType, setAuthType] = useState("LOGIN"); // "LOGIN" or "REGISTER"
+  const [userType, setUserType] = useState<string>("CUSTOMER"); // "CUSTOMER" or "VENDOR"
+  const [authType, setAuthType] = useState<string>("LOGIN"); // "LOGIN" or "REGISTER"
   const [alertDialog, setAlertDialog] = useState(false); // used to show the error code and message to the user on register or login
+  const [isOTPVerified, setIsOTPVerified] = useState<boolean>(false); // for registration - to ensure whether user is otp verified or not
 
   const [signInPasswordValue, setSignInPasswordValue] = useState("");
   const [signInPasswordError, setSignInPasswordError] = useState("");
@@ -197,6 +198,10 @@ const UserAuthDialogComponent = ({
     vendorTypeInfo: "",
     eventTypesInfo: "",
   });
+
+  const handleIsOTPVerified = () => {
+    setIsOTPVerified(true);
+  }
 
   const handleUserRegAgreement = (
     key: keyof userRegAgreementType,
@@ -475,13 +480,18 @@ const UserAuthDialogComponent = ({
     }
   };
 
+  // to trigger handleSignUp once users have verified their respective OTP's
   useEffect(() => {
+    console.log("USERAUTHDIALOG " + firebaseAuth.currentUser);
+    if(!isOTPVerified) {
+      return;
+    }
     try {
-      console.log("USERAUTHDIALOG " + firebaseAuth.currentUser);
+      handleSignUp();
     } catch (error) {
       console.log(error);
     }
-  }, []);
+  }, [isOTPVerified]);
 
   const customSelectStyles = {
     control: (provided: any, state: any) => ({
@@ -711,9 +721,10 @@ const UserAuthDialogComponent = ({
             !errorInfo.vendorTypeInfo &&
             !errorInfo.cityName
           ) {
-            // setOtpVerificationForm(true);
-            handleSignUp();
+            setPasswordVerificationForm(false);
+            setOtpVerificationForm(true);
           } else {
+            setPasswordVerificationForm(true);
             setOtpVerificationForm(false);
           }
         }
@@ -1584,7 +1595,9 @@ const UserAuthDialogComponent = ({
                       <OTPVerificationForm
                         handleDialogClose={handleClose}
                         userType={userType}
-                        emailId={inputValue}
+                        authType={authType}
+                        emailId={authType === "LOGIN" ? inputValue : userType === "CUSTOMER" ? customerInfo.email : vendorInfo.email}
+                        handleIsOTPVerified={handleIsOTPVerified}
                       />
                     )}
                     <div
