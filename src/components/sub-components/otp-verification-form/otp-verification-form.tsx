@@ -16,13 +16,17 @@ import styles from "./otp-verification-form.module.scss";
 type Props = {
   emailId: string;
   userType: string;
+  authType: string;
   handleDialogClose: () => void;
+  handleIsOTPVerified: () => void;
 };
 
 const OtpVerificationFormSubContainer = ({
   emailId,
   userType,
+  authType,
   handleDialogClose,
+  handleIsOTPVerified
 }: Props) => {
   const dispatch = useAppDispatch();
   const firebaseAuth = getAuth();
@@ -67,17 +71,24 @@ const OtpVerificationFormSubContainer = ({
             inputOTP: otp,
             userType,
             emailId,
+            authType
           }
         );
-        const { signInToken } = response.data;
+        const { signInToken, valid } = response.data;
 
-        if (!signInToken) {
+        if (authType === "LOGIN" && !signInToken) {
           displayErrorMessage();
           setLoadingScreen(false);
           handleDialogClose();
         }
-        await signInWithCustomToken(firebaseAuth, signInToken);
-        dispatch(toggleUserAuthStateChangeFlag());
+        
+        if(authType === "LOGIN") {
+          await signInWithCustomToken(firebaseAuth, signInToken);
+          dispatch(toggleUserAuthStateChangeFlag());
+          handleDialogClose();
+        } else if (authType === "REGISTER") {
+          handleIsOTPVerified();
+        }
         setLoadingScreen(false);
       } catch (error) {
         displayErrorMessage();
@@ -86,15 +97,9 @@ const OtpVerificationFormSubContainer = ({
       }
     };
 
-    try {
       if (otp.length === 6) {
         validateOTP(otp);
       }
-    } catch (error: any) {
-      displayErrorMessage();
-      setLoadingScreen(false);
-      handleDialogClose();
-    }
   }, [otp]);
 
   // set 1 min timer

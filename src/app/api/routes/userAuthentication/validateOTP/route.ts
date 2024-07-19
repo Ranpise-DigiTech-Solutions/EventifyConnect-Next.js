@@ -6,9 +6,9 @@ import { firebaseAdminAuth } from "@/lib/db/firebase-admin";
 // Assuming you have a way to store and verify OTPs, e.g., a database or in-memory store
 
 export async function POST(req: NextRequest) {
-  const { inputOTP, userType, emailId } = await req.json();
+  const { inputOTP, userType, emailId, authType } = await req.json();
   // otp should be in string format
-  if (!userType || !emailId || !inputOTP || typeof inputOTP === "number") {
+  if (!userType || !authType || !emailId || !inputOTP || typeof inputOTP === "number") {
     return new Response(
       JSON.stringify({ valid: false, message: "Invalid credentials" }),
       {
@@ -29,35 +29,49 @@ export async function POST(req: NextRequest) {
 
     // Check if OTP is valid
     if (parseInt(inputOTP) === otpData.otp && currentTime - createdAt < otpExpiryTime) {
-      // Authenticate user with Firebase Admin SDK
-      const userRecord = await firebaseAdminAuth.getUserByEmail(emailId);
 
-      if(!userRecord) {
+      if(authType === "LOGIN") {
+        // Authenticate user with Firebase Admin SDK
+        const userRecord = await firebaseAdminAuth.getUserByEmail(emailId);
+  
+        if(!userRecord) {
+          return new Response(
+            JSON.stringify({ valid: false, message: "User not found" }),
+            {
+              status: 404,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+        }
+  
+        // Generate a custom token
+        const customToken = await firebaseAdminAuth.createCustomToken(
+          userRecord.uid
+        );
+  
         return new Response(
-          JSON.stringify({ valid: false, message: "User not found" }),
+          JSON.stringify({
+            valid: true,
+            message: "OTP verified successfully",
+            signInToken: customToken,
+          }),
           {
-            status: 404,
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      } else if (authType === "REGISTER") {
+        return new Response(
+          JSON.stringify({
+            valid: true,
+            message: "OTP verified successfully",
+          }),
+          {
+            status: 200,
             headers: { "Content-Type": "application/json" },
           }
         );
       }
-
-      // Generate a custom token
-      const customToken = await firebaseAdminAuth.createCustomToken(
-        userRecord.uid
-      );
-
-      return new Response(
-        JSON.stringify({
-          valid: true,
-          message: "OTP verified successfully",
-          signInToken: customToken,
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
     } else {
       return new Response(
         JSON.stringify({ valid: false, message: "Invalid OTP or expired" }),

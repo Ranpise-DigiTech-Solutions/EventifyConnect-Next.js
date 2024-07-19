@@ -86,12 +86,15 @@ const HallDescriptionPage = (props: Props) => {
   return (
     <div>
       <Navbar setIsLoading={setIsLoading} />
-      <BookingDetailsDialog
-        open={openBookingDetailsDialog}
-        handleClose={handleBookingDetailsDialogClose}
-        hallData={hallData}
-        serviceProviderData={serviceProviderData}
-      />
+      {
+        openBookingDetailsDialog && 
+        <BookingDetailsDialog
+          open={openBookingDetailsDialog}
+          handleClose={handleBookingDetailsDialogClose}
+          hallData={hallData}
+          serviceProviderData={serviceProviderData}
+        />
+      }
       <div className={styles.DescriptionPage__container}>
         <div className={styles.main__wrapper}>
           <div className={styles.sub__wrapper}>

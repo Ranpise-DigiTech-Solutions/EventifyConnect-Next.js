@@ -182,7 +182,10 @@
 
   .pagination {
     width: 100%;
-    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    color: var(--secondary-color) !important;
   }
 
   .pagination .MuiSvgIcon-root {

@@ -4,7 +4,8 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { firestore } from "@/lib/db/firebase";
 import { cookies } from "next/headers";
 
-const MAX_OTP_REQUESTS_PER_HOUR = 10;
+// @TODO: Change this back to 3
+const MAX_OTP_REQUESTS_PER_HOUR = 100;
 
 interface OTPRequest {
   timestamp: number;
@@ -92,6 +93,8 @@ export async function POST(req: NextRequest) {
     createdAt: serverTimestamp(),
   });
 
+  console.log("ENTERED")
+
   //send OTP to email
   const response = await axios.post(
     `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/emailService/`,
@@ -100,7 +103,7 @@ export async function POST(req: NextRequest) {
       recipientEmailId: emailId,
       subject: "EventifyConnect - OTP Verification",
       message: `
-          <p>Dear Customer,</p>
+          <p>Dear ${userType === "CUSTOMER" ? "Customer" : "Vendor"},</p>
 
           <p>Thank you for using our services. Please find your OTP (One-Time Password) below for verification:</p>
 
@@ -116,6 +119,8 @@ export async function POST(req: NextRequest) {
       `,
     }
   );
+
+  console.log(response.data);
 
   if (!response?.data?.sent) {
     return new Response(JSON.stringify({ message: "Failed to send OTP" }), {

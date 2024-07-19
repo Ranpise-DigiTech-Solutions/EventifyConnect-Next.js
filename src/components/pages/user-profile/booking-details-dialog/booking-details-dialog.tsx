@@ -363,17 +363,18 @@ const BookingDetailsDialogComponent = ({ open, handleClose, currentBooking, user
   
     useEffect(() => {
       const fetchBookingDetails = async () => {
+        setIsScreenLoading(true);
         try {
           const URL = `/api/routes/${
             currentBooking.bookingStatus === "CONFIRMED"
               ? "hallBookingMaster"
               : "bookingMaster"
-          }/getBookingDetailsById/?bookingId=${
+          }/${
             currentBooking._id
-          }&userType=${userType}`;
+          }/?userType=${userType}`;
           
           const response = await axios.get(URL);
-          console.log(response.data[0]);
+          console.log("RECEIVED RESPONSE", response.data[0]);
           const { bookingStartDateTimestamp, bookingEndDateTimestamp, ...info } =
             response.data[0];
   
@@ -385,8 +386,11 @@ const BookingDetailsDialogComponent = ({ open, handleClose, currentBooking, user
             bookingEndDate: extractDate(bookingEndDateTimestamp),
             bookingEndTime: extractTime(bookingEndDateTimestamp),
           }));
+          setIsScreenLoading(false);
         } catch (error) {
           console.error(error);
+          setIsScreenLoading(false);
+          handleClose();
           return;
         }
       };
@@ -405,7 +409,7 @@ const BookingDetailsDialogComponent = ({ open, handleClose, currentBooking, user
       }
   
       const response = await axios.patch(
-        `/api/routes/bookingMaster/updateBookingDetails/${
+        `/api/routes/bookingMaster/${
           bookingDetails._id
         }`,
         {
@@ -455,7 +459,7 @@ const BookingDetailsDialogComponent = ({ open, handleClose, currentBooking, user
       }
   
       const response = await axios.patch(
-        `/api/routes/bookingMaster/updateBookingDetails/${
+        `/api/routes/bookingMaster/${
           bookingDetails._id
         }`,
         {
@@ -843,7 +847,7 @@ const BookingDetailsDialogComponent = ({ open, handleClose, currentBooking, user
               {currentActiveTab === 0 &&
                 (userType === "CUSTOMER" ? (
                   <div
-                    className={`container hallDetails__container disabledInput__wrapper`}
+                    className={`${styles.container} ${styles.hallDetails__container} ${styles.disabledInput__wrapper}`}
                   >
                     <div className={styles.inputField__wrapper}>
                       <div className={styles.title}>hall name</div>
@@ -966,7 +970,7 @@ const BookingDetailsDialogComponent = ({ open, handleClose, currentBooking, user
                   </div>
                 ) : (
                   <div
-                    className={`container hallDetails__container disabledInput__wrapper`}
+                    className={`${styles.container} ${styles.hallDetails__container} ${styles.disabledInput__wrapper}`}
                   >
                     <div className={styles.inputField__wrapper}>
                       <div className={styles.title}>customer name</div>
@@ -1095,8 +1099,8 @@ const BookingDetailsDialogComponent = ({ open, handleClose, currentBooking, user
                 ))}
               {currentActiveTab === 1 && (
                 <div
-                  className={`container preferences__container ${
-                    isFormTwoDisabled && "disabledInput__wrapper"
+                  className={`${styles.container} ${styles.preferences__container} ${
+                    isFormTwoDisabled && styles.disabledInput__wrapper
                   }`}
                 >
                   <div className={styles.inputFields__wrapper}>
@@ -1445,10 +1449,10 @@ const BookingDetailsDialogComponent = ({ open, handleClose, currentBooking, user
               )}
               {currentActiveTab === 2 && (
                 <div
-                  className={`container dateTime__container ${
+                  className={`${styles.container} ${styles.dateTime__container} ${
                     isFormThreeDisabled
-                      ? "disabledInput__wrapper"
-                      : "container-column-center"
+                      ? styles.disabledInput__wrapper
+                      : styles['container-column-center']
                   }`}
                   style={isFormThreeDisabled ? { width: "50%" } : {}}
                 >
@@ -1460,12 +1464,12 @@ const BookingDetailsDialogComponent = ({ open, handleClose, currentBooking, user
                   )}
                   <div
                     className={`${
-                      !isFormThreeDisabled && "inputFields__wrapper"
+                      !isFormThreeDisabled && styles.inputFields__wrapper
                     }`}
                   >
                     <div
                       className={`${
-                        isFormThreeDisabled ? "inputField__wrapper" : "wrapper"
+                        isFormThreeDisabled ? styles.inputField__wrapper : styles.wrapper
                       }`}
                     >
                       <div className={styles.title}>Booking Start Date</div>
@@ -1485,7 +1489,7 @@ const BookingDetailsDialogComponent = ({ open, handleClose, currentBooking, user
                     </div>
                     <div
                       className={`${
-                        isFormThreeDisabled ? "inputField__wrapper" : "wrapper"
+                        isFormThreeDisabled ? styles.inputField__wrapper : styles.wrapper
                       }`}
                     >
                       <div className={styles.title}>Start Time</div>
@@ -1506,12 +1510,12 @@ const BookingDetailsDialogComponent = ({ open, handleClose, currentBooking, user
                   </div>
                   <div
                     className={`${
-                      !isFormThreeDisabled && "inputFields__wrapper"
+                      !isFormThreeDisabled && styles.inputFields__wrapper
                     }`}
                   >
                     <div
                       className={`${
-                        isFormThreeDisabled ? "inputField__wrapper" : "wrapper"
+                        isFormThreeDisabled ? styles.inputField__wrapper : styles.wrapper
                       }`}
                     >
                       <div className={styles.title}>Booking End Date</div>
@@ -1531,7 +1535,7 @@ const BookingDetailsDialogComponent = ({ open, handleClose, currentBooking, user
                     </div>
                     <div
                       className={`${
-                        isFormThreeDisabled ? "inputField__wrapper" : "wrapper"
+                        isFormThreeDisabled ? styles.inputField__wrapper : styles.wrapper
                       }`}
                     >
                       <div className={styles.title}>End Time</div>

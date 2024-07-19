@@ -84,7 +84,13 @@ export async function POST(req: NextRequest) {
   try {
     await connectDB(); // check database connection
 
-    const newDocument = new hallMaster(reqBody);
+    const { hallParking, ...hallData } = reqBody;
+    const postBody = {
+      ...hallData,
+      hallParking: hallParking === "AVAILABLE",
+    };
+
+    const newDocument = new hallMaster(postBody);
     const savedDocument = await newDocument.save();
 
     if (!savedDocument) {
