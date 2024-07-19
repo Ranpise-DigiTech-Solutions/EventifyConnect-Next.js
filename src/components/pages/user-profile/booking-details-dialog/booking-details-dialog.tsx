@@ -2,7 +2,7 @@
 "use client"
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useAppSelector } from '@/lib/hooks';
+import { useAppSelector } from "@/lib/hooks/use-redux-store";
 
 import {
     Tag,

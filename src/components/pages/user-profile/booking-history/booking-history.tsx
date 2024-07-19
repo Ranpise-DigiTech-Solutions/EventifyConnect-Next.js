@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react'
-import { useAppSelector } from '@/lib/hooks'
+import { useAppSelector } from "@/lib/hooks/use-redux-store"
 import { DatePicker, Tag, Modal, Skeleton, Empty } from "antd";
 import TablePagination from "@mui/material/TablePagination";
 import axios from "axios";

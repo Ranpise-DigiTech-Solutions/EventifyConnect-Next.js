@@ -1,11 +1,11 @@
 import type { NextRequest } from "next/server";
 import connectDB from "@/lib/db/mongodb";
-import { ref, set, get } from 'firebase/database';
+import { ref, set } from 'firebase/database';
 import { firebaseDb } from "@/lib/db/firebase";
 import {
   serviceProviderMaster,
   customerMaster,
-} from "@/app/api/schemas/index.js";
+} from "@/app/api/schemas";
 import axios from 'axios';
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
@@ -43,6 +43,8 @@ function decrypt(text: string) {
 
 export async function POST(req: NextRequest) {
   const { userType, data, user } = await req.json();
+
+  console.log(userType, data, user);
 
   if (!data || data.length === 0 || !user || user.length === 0 || !userType) {
     return new Response(
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest) {
         );
     }
 
-    const response = userType === "CUSTOMER" ? await axios.post(`/api/routes/customerMaster/`, {
+    const response = userType === "CUSTOMER" ? await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/customerMaster/`, {
         customerUid: user.uid,
         customerName: data.fullName,
         customerEmail: data.email,
@@ -98,7 +100,7 @@ export async function POST(req: NextRequest) {
         customerContact: data.phone,
         customerCurrentLocation: data.location,
         programId: "USER"
-    }) : await axios.post(`/api/routes/serviceProviderMaster/`, {
+    }) : await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/serviceProviderMaster/`, {
         vendorUid: user.uid,
         vendorName: data.fullName,
         vendorTypeId: data.vendorTypeInfo,
@@ -112,6 +114,8 @@ export async function POST(req: NextRequest) {
         programId: "USER"
     });
 
+    console.log("PUSHED DATA TO MONGO");
+
     const userRef = ref(firebaseDb, 'Users/' + user.uid);
     await set(userRef, {
         userType: userType,
@@ -123,9 +127,9 @@ export async function POST(req: NextRequest) {
 
     const jwtSecretKey = process.env.JWT_SECRET_KEY;
 
-if (!jwtSecretKey) {
-  throw new Error("JWT_SECRET_KEY environment variable is not set.");
-}
+    if (!jwtSecretKey) {
+      throw new Error("JWT_SECRET_KEY environment variable is not set.");
+    }
 
     const accessToken = jwt.sign(
         { id: response.data._id },
@@ -138,6 +142,7 @@ if (!jwtSecretKey) {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
+    console.log(error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

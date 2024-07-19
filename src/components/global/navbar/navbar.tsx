@@ -3,7 +3,7 @@
 
 import { usePathname } from 'next/navigation';
 import React, { useState, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks/use-redux-store";
 import Link from "next/link";
 import Image from "next/image";
 import { onAuthStateChanged } from "firebase/auth";
@@ -132,7 +132,7 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
         const getUserData = async () => {
           try {
             const response = await axios.get(
-              `/api/routes/userAuthentication/getUserData/${currentUser.uid}`
+              `/api/routes/userAuthentication/${currentUser.uid}`
             );
             dispatch(
               setUserInfoData({ key: "userDetails", value: response.data })

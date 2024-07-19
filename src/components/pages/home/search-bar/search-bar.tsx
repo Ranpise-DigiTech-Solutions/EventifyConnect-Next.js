@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useAppSelector, useAppDispatch } from "@/lib/hooks";
+import { useAppSelector, useAppDispatch } from "@/lib/hooks/use-redux-store";
 import Select, { SingleValue } from "react-select";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";

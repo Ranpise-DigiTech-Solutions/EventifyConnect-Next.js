@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { useAppSelector } from '@/lib/hooks';
+import { useAppSelector } from "@/lib/hooks/use-redux-store";
 import axios from 'axios';
 import Select, { SingleValue } from "react-select";
 import PhoneInput from "react-phone-input-2";

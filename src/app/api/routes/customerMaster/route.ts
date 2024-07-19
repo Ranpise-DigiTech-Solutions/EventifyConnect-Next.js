@@ -43,15 +43,16 @@ export async function POST(req: NextRequest) {
     }
 
     const newDocument = new customerMaster(postBody);
+    const savedDocument = await newDocument.save(); // Save the document
 
-    if (!newDocument) {
+    if (!savedDocument) {
       return new Response(JSON.stringify({ message: "New document couldn't be created!" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify(newDocument), {
+    return new Response(JSON.stringify(savedDocument), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });

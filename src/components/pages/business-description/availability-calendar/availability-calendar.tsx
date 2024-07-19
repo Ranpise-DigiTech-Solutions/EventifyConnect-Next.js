@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { useAppSelector, useAppDispatch } from "@/lib/hooks";
+import { useAppSelector, useAppDispatch } from "@/lib/hooks/use-redux-store";
 
 import Tooltip from "@mui/material/Tooltip";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";

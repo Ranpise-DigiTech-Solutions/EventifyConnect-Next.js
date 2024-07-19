@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useCallback, useEffect, useRef } from "react";
 
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks/use-redux-store";
 import axios from "axios";
 import Select, { SingleValue } from "react-select";
 import PhoneInput from "react-phone-input-2";
@@ -362,7 +362,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
   useEffect(() => {
     try {
       setIsOptionsLoading(true);
-      dispatch(fetchStates({ countryName: "" }));
+      dispatch(fetchStates({ countryName: commonData.country }));
       setIsOptionsLoading(false);
     } catch (error: any) {
       setIsOptionsLoading(false);
@@ -1100,8 +1100,8 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                 <PersonIcon className={`${styles.icon} ${styles.personIcon}`} />
                 <p>
                   {userType === "CUSTOMER"
-                    ? userInfo.userDetails?.Document.customerName
-                    : userInfo.userDetails?.Document.vendorName}
+                    ? userInfo.userDetails?.Document?.customerName
+                    : userInfo.userDetails?.Document?.vendorName}
                 </p>
                 <VerifiedIcon className={`${styles.icon} ${styles.verificationIcon}`} />
               </div>
@@ -1198,8 +1198,8 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                   ></div>
                 </div>
                 <div
-                  className={`sub-wrapper ${
-                    formType !== "FORM_ONE" && "currentForm"
+                  className={`${styles['sub-wrapper']} ${
+                    formType !== "FORM_ONE" && styles.currentForm
                   }`}
                 >
                   <div className={styles.formNumberIndicator}>
@@ -1221,10 +1221,10 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                   ></div>
                 </div>
                 <div
-                  className={`sub-wrapper ${
+                  className={`${styles['sub-wrapper']} ${
                     formType !== "FORM_ONE" &&
                     formType !== "FORM_TWO" &&
-                    "currentForm"
+                    styles.currentForm
                   }`}
                 >
                   <div className={styles.formNumberIndicator}>
@@ -1248,8 +1248,8 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                       ></div>
                     </div>
                     <div
-                      className={`sub-wrapper ${
-                        formType === "FORM_FOUR" && "currentForm"
+                      className={`${styles['sub-wrapper']} ${
+                        formType === "FORM_FOUR" && styles.currentForm
                       }`}
                     >
                       <div className={styles.formNumberIndicator}>
@@ -2157,6 +2157,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                                     required: true,
                                     autoFocus: true,
                                     placeholder: "Enter phone number",
+                                    style: { width: "100%" },
                                   }}
                                   inputClass="input"
                                 />
@@ -2232,6 +2233,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                                     required: true,
                                     autoFocus: true,
                                     placeholder: "Enter phone number",
+                                    style: { width: "100%" },
                                   }}
                                   inputClass="input"
                                 />
@@ -2274,6 +2276,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                                   required: true,
                                   autoFocus: true,
                                   placeholder: "Enter phone number",
+                                  style: { width: "100%" },
                                 }}
                                 inputClass="input"
                               />
@@ -2345,6 +2348,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                                   required: true,
                                   autoFocus: true,
                                   placeholder: "Enter phone number",
+                                  style: { width: "100%" },
                                 }}
                                 inputClass="input"
                               />

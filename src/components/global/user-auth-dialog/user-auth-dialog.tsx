@@ -1,6 +1,8 @@
+"use client";
+
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useRef, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks/use-redux-store";
 import {
   sendSignInLinkToEmail,
   GoogleAuthProvider,
@@ -48,11 +50,15 @@ import { FaUserAlt, FaEdit } from "react-icons/fa";
 
 import styles from "./user-auth-dialog.module.scss";
 import { firebaseAuth } from "@/lib/db/firebase";
+import { verifyUserByEmail } from "@/lib/utils/verify-user";
 import {
   setUserInfoData,
   toggleUserAuthStateChangeFlag,
 } from "@/redux/slices/user-info";
-import { LoadingScreen } from "@/components/sub-components";
+import {
+  LoadingScreen,
+  OTPVerificationForm,
+} from "@/components/sub-components";
 import { RootState } from "@/redux/store";
 
 // Define the Transition component with correct types
@@ -91,8 +97,6 @@ const UserAuthDialogComponent = ({
     useState(false); // to display form requesting password for verification
   const [userType, setUserType] = useState("CUSTOMER"); // "CUSTOMER" or "VENDOR"
   const [authType, setAuthType] = useState("LOGIN"); // "LOGIN" or "REGISTER"
-  const [otp, setOTP] = useState<Array<string>>(["", "", "", "", "", ""]);
-  const [otpFieldFocused, setOtpFieldFocused] = useState<number | null>(null);
   const [alertDialog, setAlertDialog] = useState(false); // used to show the error code and message to the user on register or login
 
   const [signInPasswordValue, setSignInPasswordValue] = useState("");
@@ -101,7 +105,6 @@ const UserAuthDialogComponent = ({
     useState(false); // to trigger forceful re-render of useEffect whenever input field is validated
   const [signInError, setSignInError] = useState(false);
 
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const dispatch = useAppDispatch();
   const data = useAppSelector((state: RootState) => state.dataInfo); // CITIES, EVENT_TYPES & VENDOR_TYPES data
 
@@ -205,62 +208,34 @@ const UserAuthDialogComponent = ({
     }));
   };
 
-  const handleCustomerInfo = (key : keyof customerInfoType, value : customerInfoType[keyof customerInfoType]) => {
+  const handleCustomerInfo = (
+    key: keyof customerInfoType,
+    value: customerInfoType[keyof customerInfoType]
+  ) => {
     setCustomerInfo((previousInfo) => ({
       ...previousInfo,
       [key]: value,
     }));
   };
 
-  const handleVendorInfo = (key : keyof vendorInfoType, value : vendorInfoType[keyof vendorInfoType]) => {
+  const handleVendorInfo = (
+    key: keyof vendorInfoType,
+    value: vendorInfoType[keyof vendorInfoType]
+  ) => {
     setVendorInfo((previousInfo) => ({
       ...previousInfo,
       [key]: value,
     }));
   };
 
-  const handleErrorInfo = (key : keyof errorStatusType, value: errorStatusType[keyof errorStatusType]) => {
+  const handleErrorInfo = (
+    key: keyof errorStatusType,
+    value: errorStatusType[keyof errorStatusType]
+  ) => {
     setErrorInfo((previousInfo) => ({
       ...previousInfo,
       [key]: value,
     }));
-  };
-
-  const handleOtpChange = (index : number, value : string) => {
-    const newOTP = [...otp];
-    newOTP[index] = value;
-    setOTP(newOTP);
-
-    // Automatically focus on the next input field
-    if (value !== "" && index < otp.length - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (event : React.KeyboardEvent<HTMLInputElement>, index : number) => {
-    switch (event.key) {
-      case "Backspace":
-        // Move to the previous input field if backspace is pressed and the current field is empty
-        if (index > 0 && otp[index] === "") {
-          inputRefs.current[index - 1]?.focus();
-        }
-        break;
-      case "ArrowLeft":
-        // Move to the previous input field if left arrow is pressed
-        if (index > 0) {
-          inputRefs.current[index - 1]?.focus();
-        }
-        break;
-      case "ArrowRight":
-        // Move to the next input field if right arrow is pressed
-        if (index < otp.length - 1) {
-          inputRefs.current[index + 1]?.focus();
-        }
-        break;
-      // Handle other keys if needed
-      default:
-        break;
-    }
   };
 
   const validatePassword = (signInPasswordValue: string) => {
@@ -478,13 +453,12 @@ const UserAuthDialogComponent = ({
 
       if (userType === "VENDOR") {
         const vendorSpecificInfo = {
+          ...vendorInfo,
           vendorTypeInfo: vendorInfo.vendorTypeInfo.vendorTypeId,
           eventTypesInfo: vendorInfo.eventTypesInfo.map((item) => item.eventId),
-        }
-        const { ...info } = postData.data;
+        };
         postData.data = {
-          ...info,
-          ...vendorSpecificInfo
+          ...vendorSpecificInfo,
         };
       }
 
@@ -492,7 +466,7 @@ const UserAuthDialogComponent = ({
       localStorage.setItem("userAccessToken", response.data);
       dispatch(toggleUserAuthStateChangeFlag());
       setLoadingScreen(false);
-      handleClose(); // Close the Entire Login/Register Dialog after Sign-In
+      handleClose(); // Close the Entire Login/Register Dialog after Sign-Up
       handleRegistrationDialogOpen();
     } catch (error: any) {
       setAlertDialog(true);
@@ -534,7 +508,7 @@ const UserAuthDialogComponent = ({
     }),
   };
 
-  const validateLoginForm = () => {
+  const validateLoginForm = async () => {
     if (inputType === "EMAIL") {
       if (!inputValue) {
         setInputError("Email address is required");
@@ -543,7 +517,14 @@ const UserAuthDialogComponent = ({
       } else if (!inputValue.endsWith("@gmail.com")) {
         setInputError("Couldn't find your account");
       } else {
-        setInputError("");
+        setLoadingScreen(true);
+        const userExists = await verifyUserByEmail(inputValue);
+        if (!userExists) {
+          setInputError("Couldn't find your account. Sign Up to continue!");
+        } else {
+          setInputError("");
+        }
+        setLoadingScreen(false);
       }
     } else if (inputType === "PHONE") {
       const phoneRegex = /^\+(?:[0-9] ?){6,14}[0-9]$/;
@@ -558,7 +539,7 @@ const UserAuthDialogComponent = ({
     setLoginFormErrorUpdateFlag((prevFlag) => !prevFlag);
   };
 
-  const registrationFormValidation = () => {
+  const registrationFormValidation = async () => {
     if (userType === "VENDOR") {
       if (!updateVendorRegistrationForm) {
         if (!vendorInfo.fullName) {
@@ -573,7 +554,19 @@ const UserAuthDialogComponent = ({
         } else if (!vendorInfo.email.endsWith("@gmail.com")) {
           handleErrorInfo("email", "Couldn't find your account");
         } else {
-          handleErrorInfo("email", "");
+          setLoadingScreen(true);
+          const userExists = await verifyUserByEmail(
+            vendorInfo.email,
+          );
+          if (userExists) {
+            handleErrorInfo(
+              "email",
+              "Account already exists. Please login to continue!"
+            );
+          } else {
+            handleErrorInfo("email", "");
+          }
+          setLoadingScreen(false);
         }
         if (!vendorInfo.phone) {
           handleErrorInfo("phone", "Phone number is Required");
@@ -637,7 +630,19 @@ const UserAuthDialogComponent = ({
       } else if (!customerInfo.email.endsWith("@gmail.com")) {
         handleErrorInfo("email", "Couldn't find your account");
       } else {
-        handleErrorInfo("email", "");
+        setLoadingScreen(true);
+        const userExists = await verifyUserByEmail(
+          customerInfo.email,
+        );
+        if (userExists) {
+          handleErrorInfo(
+            "email",
+            "Account already exists. Please login to continue!"
+          );
+        } else {
+          handleErrorInfo("email", "");
+        }
+        setLoadingScreen(false);
       }
       if (!customerInfo.phone) {
         handleErrorInfo("phone", "Phone number is Required");
@@ -664,15 +669,6 @@ const UserAuthDialogComponent = ({
     setRegFormErrorUpdateFlag((prevFlag) => !prevFlag);
   };
 
-  // to be executed each time otp verification page is brought up
-  // useEffect(()=> {
-  //   try {
-
-  //   } catch (error) {
-  //     console.error(error.message);
-  //   }
-  // }, [otpVerificationForm])
-
   // To be executed everytime login validation is done
   useEffect(() => {
     try {
@@ -686,7 +682,7 @@ const UserAuthDialogComponent = ({
     } catch (error: any) {
       console.error(error.message);
     }
-  }, [inputError, loginFormErrorUpdateFlag]);
+  }, [loginFormErrorUpdateFlag]);
 
   // to be executed everytime register validation is done
   useEffect(() => {
@@ -725,7 +721,7 @@ const UserAuthDialogComponent = ({
     } catch (error: any) {
       console.error(error.message);
     }
-  }, [errorInfo, regFormErrorUpdateFlag]);
+  }, [regFormErrorUpdateFlag]);
 
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -759,12 +755,12 @@ const UserAuthDialogComponent = ({
           aria-describedby="alert-dialog-description"
         >
           <DialogTitle id="alert-dialog-title">
-            {"Duplicate id found"}
+            {"Unexpected Error Occurred"}
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
-              User already exists with the given details! Please login to
-              continue.
+              An unexpected error occurred while processing your request. Please
+              try again later.
             </DialogContentText>
           </DialogContent>
           <DialogActions>
@@ -834,14 +830,18 @@ const UserAuthDialogComponent = ({
                         className={`${styles.googleSignIn} ${styles.box}`}
                         onClick={handleGoogleAuthentication}
                       >
-                        <FcGoogle className={`${styles.googleIcon} ${styles.icon}`} />
+                        <FcGoogle
+                          className={`${styles.googleIcon} ${styles.icon}`}
+                        />
                         <p>Google</p>
                       </div>
                       <div
                         className={`${styles.facebookSignIn} ${styles.box}`}
                         onClick={handleFacebookAuthentication}
                       >
-                        <FacebookIcon className={`${styles.fbIcon} ${styles.icon}`} />
+                        <FacebookIcon
+                          className={`${styles.fbIcon} ${styles.icon}`}
+                        />
                         <p>Facebook</p>
                       </div>
                       {/* <div className="microsoftSignIn box">
@@ -975,7 +975,7 @@ const UserAuthDialogComponent = ({
                             }
                           >
                             <FaUserAlt className={styles.icon} />
-                            <div className={styles['vertical-line']}></div>
+                            <div className={styles["vertical-line"]}></div>
                             <input
                               type="text"
                               name="fullName"
@@ -998,7 +998,9 @@ const UserAuthDialogComponent = ({
                             />
                           </div>
                           {errorInfo.fullName && (
-                            <div className={`${styles.inputError} ${styles.specialErrorClass}`}>
+                            <div
+                              className={`${styles.inputError} ${styles.specialErrorClass}`}
+                            >
                               <ErrorIcon className={styles.icon} />
                               <p>{errorInfo.fullName}</p>
                             </div>
@@ -1012,7 +1014,7 @@ const UserAuthDialogComponent = ({
                             }
                           >
                             <EmailIcon className={styles.icon} />
-                            <div className={styles['vertical-line']}></div>
+                            <div className={styles["vertical-line"]}></div>
                             <input
                               type="email"
                               name="email"
@@ -1032,7 +1034,9 @@ const UserAuthDialogComponent = ({
                             />
                           </div>
                           {errorInfo.email && (
-                            <div className={`${styles.inputError} ${styles.specialErrorClass}`}>
+                            <div
+                              className={`${styles.inputError} ${styles.specialErrorClass}`}
+                            >
                               <ErrorIcon className={styles.icon} />
                               <p>{errorInfo.email}</p>
                             </div>
@@ -1068,7 +1072,9 @@ const UserAuthDialogComponent = ({
                             />
                           </div>
                           {errorInfo.phone && (
-                            <div className={`${styles.inputError} ${styles.specialErrorClass}`}>
+                            <div
+                              className={`${styles.inputError} ${styles.specialErrorClass}`}
+                            >
                               <ErrorIcon className={styles.icon} />
                               <p>{errorInfo.phone}</p>
                             </div>
@@ -1084,7 +1090,7 @@ const UserAuthDialogComponent = ({
                             }
                           >
                             <LockIcon className={styles.icon} />
-                            <div className={styles['vertical-line']}></div>
+                            <div className={styles["vertical-line"]}></div>
                             <input
                               type={passwordVisibility ? "text" : "password"}
                               name="password"
@@ -1111,14 +1117,20 @@ const UserAuthDialogComponent = ({
                               }
                             >
                               {passwordVisibility ? (
-                                <VisibilityIcon className={`${styles.icon} ${styles.visibilityIcon}`} />
+                                <VisibilityIcon
+                                  className={`${styles.icon} ${styles.visibilityIcon}`}
+                                />
                               ) : (
-                                <VisibilityOffIcon className={`${styles.icon} ${styles.visibilityIcon}`} />
+                                <VisibilityOffIcon
+                                  className={`${styles.icon} ${styles.visibilityIcon}`}
+                                />
                               )}
                             </a>
                           </div>
                           {errorInfo.password && (
-                            <div className={`${styles.inputError} ${styles.specialErrorClass}`}>
+                            <div
+                              className={`${styles.inputError} ${styles.specialErrorClass}`}
+                            >
                               <ErrorIcon className={styles.icon} />
                               <p>{errorInfo.password}</p>
                             </div>
@@ -1147,8 +1159,10 @@ const UserAuthDialogComponent = ({
                                 : {}
                             }
                           >
-                            <DriveFileRenameOutlineIcon className={styles.icon} />
-                            <div className={styles['vertical-line']}></div>
+                            <DriveFileRenameOutlineIcon
+                              className={styles.icon}
+                            />
+                            <div className={styles["vertical-line"]}></div>
                             <input
                               type="text"
                               name="brandName"
@@ -1162,7 +1176,9 @@ const UserAuthDialogComponent = ({
                             />
                           </div>
                           {errorInfo.brandName && (
-                            <div className={`${styles.inputError} ${styles.specialErrorClass}`}>
+                            <div
+                              className={`${styles.inputError} ${styles.specialErrorClass}`}
+                            >
                               <ErrorIcon className={styles.icon} />
                               <p>{errorInfo.brandName}</p>
                             </div>
@@ -1178,15 +1194,17 @@ const UserAuthDialogComponent = ({
                             }
                           >
                             <PlaceIcon className={styles.icon} />
-                            <div className={styles['vertical-line']}></div>
+                            <div className={styles["vertical-line"]}></div>
                             <Select
                               styles={customSelectStyles}
                               options={
                                 Array.isArray(data.citiesOfCountry.data)
-                                  ? data.citiesOfCountry.data.map((city : string) => ({
-                                      value: city,
-                                      label: city,
-                                    }))
+                                  ? data.citiesOfCountry.data.map(
+                                      (city: string) => ({
+                                        value: city,
+                                        label: city,
+                                      })
+                                    )
                                   : null
                               }
                               value={
@@ -1197,7 +1215,9 @@ const UserAuthDialogComponent = ({
                                     }
                                   : null
                               }
-                              onChange={(selectedOption : SingleValue<ReactSelectOptionType>) =>
+                              onChange={(
+                                selectedOption: SingleValue<ReactSelectOptionType>
+                              ) =>
                                 handleVendorInfo(
                                   "cityName",
                                   selectedOption?.value
@@ -1220,7 +1240,9 @@ const UserAuthDialogComponent = ({
                             />
                           </div>
                           {errorInfo.cityName && (
-                            <div className={`${styles.inputError} ${styles.specialErrorClass}`}>
+                            <div
+                              className={`${styles.inputError} ${styles.specialErrorClass}`}
+                            >
                               <ErrorIcon className={styles.icon} />
                               <p>{errorInfo.cityName}</p>
                             </div>
@@ -1236,15 +1258,20 @@ const UserAuthDialogComponent = ({
                             }
                           >
                             <BusinessIcon className={styles.icon} />
-                            <div className={styles['vertical-line']}></div>
+                            <div className={styles["vertical-line"]}></div>
                             <Select
                               styles={customSelectStyles}
                               options={
                                 Array.isArray(data.vendorTypes.data)
-                                  ? data.vendorTypes.data.map((val : { _id : string, vendorType: string }) => ({
-                                      value: val._id,
-                                      label: val.vendorType,
-                                    }))
+                                  ? data.vendorTypes.data.map(
+                                      (val: {
+                                        _id: string;
+                                        vendorType: string;
+                                      }) => ({
+                                        value: val._id,
+                                        label: val.vendorType,
+                                      })
+                                    )
                                   : null
                               }
                               value={
@@ -1258,7 +1285,9 @@ const UserAuthDialogComponent = ({
                                     }
                                   : null
                               }
-                              onChange={(selectedOption : SingleValue<ReactSelectOptionType>) => {
+                              onChange={(
+                                selectedOption: SingleValue<ReactSelectOptionType>
+                              ) => {
                                 handleVendorInfo("vendorTypeInfo", {
                                   vendorType: selectedOption?.label,
                                   vendorTypeId: selectedOption?.value,
@@ -1281,7 +1310,9 @@ const UserAuthDialogComponent = ({
                             />
                           </div>
                           {errorInfo.vendorTypeInfo && (
-                            <div className={`${styles.inputError} ${styles.specialErrorClass}`}>
+                            <div
+                              className={`${styles.inputError} ${styles.specialErrorClass}`}
+                            >
                               <ErrorIcon className={styles.icon} />
                               <p>{errorInfo.vendorTypeInfo}</p>
                             </div>
@@ -1297,7 +1328,7 @@ const UserAuthDialogComponent = ({
                             }
                           >
                             <LibraryAddCheckIcon className={styles.icon} />
-                            <div className={styles['vertical-line']}></div>
+                            <div className={styles["vertical-line"]}></div>
                             <Select
                               styles={customSelectStyles}
                               value={
@@ -1323,10 +1354,15 @@ const UserAuthDialogComponent = ({
                               }}
                               options={
                                 Array.isArray(data.eventTypes.data)
-                                  ? data.eventTypes.data.map((item : { _id: string, eventName: string }) => ({
-                                      value: item._id,
-                                      label: item.eventName,
-                                    }))
+                                  ? data.eventTypes.data.map(
+                                      (item: {
+                                        _id: string;
+                                        eventName: string;
+                                      }) => ({
+                                        value: item._id,
+                                        label: item.eventName,
+                                      })
+                                    )
                                   : null
                               }
                               placeholder="Select all event types"
@@ -1347,7 +1383,9 @@ const UserAuthDialogComponent = ({
                             />
                           </div>
                           {errorInfo.eventTypesInfo && (
-                            <div className={`${styles.inputError} ${styles.specialErrorClass}`}>
+                            <div
+                              className={`${styles.inputError} ${styles.specialErrorClass}`}
+                            >
                               <ErrorIcon className={styles.icon} />
                               <p>{errorInfo.eventTypesInfo}</p>
                             </div>
@@ -1356,7 +1394,7 @@ const UserAuthDialogComponent = ({
                         <div className={styles.userAgreement__wrapper}>
                           <div className={styles.sub__wrapper}>
                             <input
-                            title="termsNdConditions-checkBox"
+                              title="termsNdConditions-checkBox"
                               type="checkbox"
                               checked={userRegAgreement.termsAndConditions}
                               onChange={() =>
@@ -1373,7 +1411,7 @@ const UserAuthDialogComponent = ({
                           </div>
                           <div className={styles.sub__wrapper}>
                             <input
-                            title="privacyPolicy-checkBox"
+                              title="privacyPolicy-checkBox"
                               type="checkbox"
                               checked={userRegAgreement.privacyPolicy}
                               onChange={() =>
@@ -1435,7 +1473,14 @@ const UserAuthDialogComponent = ({
                       <p>
                         Have an <span>account?</span>
                       </p>
-                      <a onClick={() => setAuthType("LOGIN")}>Sign In</a>
+                      <a
+                        onClick={() => {
+                          setAuthType("LOGIN");
+                          setUpdateVendorRegistrationForm(false);
+                        }}
+                      >
+                        Sign In
+                      </a>
                     </>
                   )}
                 </div>
@@ -1452,7 +1497,9 @@ const UserAuthDialogComponent = ({
                     ) : (
                       <h2 className={styles.form__title}>Check your email</h2>
                     )}
-                    <p className={styles.form__desc}>to continue to EventifyConnect</p>
+                    <p className={styles.form__desc}>
+                      to continue to EventifyConnect
+                    </p>
                     <div className={styles.editInfo}>
                       <div className={styles.userIcon}>
                         <PersonIcon className={styles.icon} />
@@ -1465,7 +1512,7 @@ const UserAuthDialogComponent = ({
                         <p>{vendorInfo.email}</p>
                       )}
                       <button
-                      title="edit"
+                        title="edit"
                         className={styles.editBtn}
                         onClick={() => setOtpVerificationForm(false)}
                       >
@@ -1508,9 +1555,13 @@ const UserAuthDialogComponent = ({
                               }
                             >
                               {passwordVisibility ? (
-                                <VisibilityIcon className={`${styles.icon} ${styles.visibilityIcon}`} />
+                                <VisibilityIcon
+                                  className={`${styles.icon} ${styles.visibilityIcon}`}
+                                />
                               ) : (
-                                <VisibilityOffIcon className={`${styles.icon} ${styles.visibilityIcon}`} />
+                                <VisibilityOffIcon
+                                  className={`${styles.icon} ${styles.visibilityIcon}`}
+                                />
                               )}
                             </a>
                           </div>
@@ -1530,43 +1581,18 @@ const UserAuthDialogComponent = ({
                         </button>
                       </div>
                     ) : (
-                      <div className={styles.otpField__wrapper}>
-                        <div className={styles.sub__title}>Verification code</div>
-                        <div className={styles.sub__desc}>
-                          Enter the code sent to your email address
-                        </div>
-                        <div className={styles.otp__wrapper}>
-                          {otp.map((value, index : number) => (
-                            <React.Fragment key={`${index}-${Date.now()}`}>
-                              <input
-                              title={"otpField"}
-                                type="text"
-                                pattern="[0-9]*" // Allow only digits
-                                className={`${styles['otp-digit']} ${
-                                  otpFieldFocused === index && styles.currentInputBox
-                                }`}
-                                maxLength={1}
-                                value={value}
-                                onChange={(e) =>
-                                  handleOtpChange(index, e.target.value)
-                                }
-                                onKeyDown={(e) => handleKeyDown(e, index)}
-                                onFocus={() => setOtpFieldFocused(index)}
-                                onBlur={() => setOtpFieldFocused(null)}
-                                ref={(input : any) =>
-                                  (inputRefs.current[index] = input)
-                                }
-                              />
-                              &nbsp;
-                            </React.Fragment>
-                          ))}
-                        </div>
-                        <div className={styles.comment}>
-                          Didn&apos;t receive a code? <span>Resend (12)</span>
-                        </div>
-                      </div>
+                      <OTPVerificationForm
+                        handleDialogClose={handleClose}
+                        userType={userType}
+                        emailId={inputValue}
+                      />
                     )}
-                    <div className={styles.methodSwitch__wrapper}>
+                    <div
+                      className={styles.methodSwitch__wrapper}
+                      onClick={() =>
+                        setPasswordVerificationForm(!passwordVerificationForm)
+                      }
+                    >
                       Use another method
                     </div>
                   </div>
@@ -1604,7 +1630,11 @@ const UserAuthDialogComponent = ({
             </div>
           </div>
         </div>
-        <button className={styles.cancelIcon} onClick={handleClose} title="cancel">
+        <button
+          className={styles.cancelIcon}
+          onClick={handleClose}
+          title="cancel"
+        >
           <CloseIcon />
         </button>
       </Dialog>

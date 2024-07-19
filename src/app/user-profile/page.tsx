@@ -1,5 +1,7 @@
+"use client"
+
 import React, { useState, useEffect } from 'react'
-import { useAppDispatch, useAppSelector } from '@/lib/hooks';
+import { useAppDispatch, useAppSelector } from "@/lib/hooks/use-redux-store";
 import { onAuthStateChanged } from "firebase/auth";
 import axios from "axios";
 
@@ -99,7 +101,7 @@ const UserProfilePage = ({ window }: Props) => {
         const getUserData = async () => {
           try {
             const response = await axios.get(
-              `/api/routes/userAuthentication/getUserData/${
+              `/api/routes/userAuthentication/${
                 currentUser.uid
               }`
             );
