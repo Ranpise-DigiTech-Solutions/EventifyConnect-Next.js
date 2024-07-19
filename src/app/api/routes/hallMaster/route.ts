@@ -85,8 +85,9 @@ export async function POST(req: NextRequest) {
     await connectDB(); // check database connection
 
     const newDocument = new hallMaster(reqBody);
+    const savedDocument = await newDocument.save();
 
-    if (!newDocument) {
+    if (!savedDocument) {
       return new Response(
         JSON.stringify({ message: "Sorry! operation failed." }),
         {
@@ -96,13 +97,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const savedDocument = await newDocument.save();
-
     return new Response(JSON.stringify(savedDocument), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
+    console.log(error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

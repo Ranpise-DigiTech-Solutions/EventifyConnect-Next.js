@@ -11,7 +11,7 @@ import LocationOnIcon from "@mui/icons-material/LocationOn";
 import Button from "@mui/material/Button";
 
 import { NavigationDots } from "@/components/sub-components";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks/use-redux-store";
 
 import VirtualizedSelect from "@/components/ui/virtualized-select";
 import { setSearchBoxFilterData } from "@/redux/slices/search-box-filter";

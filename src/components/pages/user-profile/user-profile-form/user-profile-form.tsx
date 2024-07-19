@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import "react-phone-input-2/lib/style.css";
 import React, { useState, useRef, useEffect } from "react";
-import { useAppSelector, useAppDispatch } from "@/lib/hooks";
+import { useAppSelector, useAppDispatch } from "@/lib/hooks/use-redux-store";
 import Select, { SingleValue } from "react-select";
 import PhoneInput from "react-phone-input-2";
 import axios from "axios";

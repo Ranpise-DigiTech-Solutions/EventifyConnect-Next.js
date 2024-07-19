@@ -2,7 +2,7 @@
 // import { FaClock } from "react-icons/fa";
 // import Chart from "chart.js/auto";
 // import axios from "axios";
-// import { useAppSelector } from '@/lib/hooks';
+// import { useAppSelector } from "@/lib/hooks/use-redux-store";
 
 // import "bootstrap/dist/css/bootstrap.min.css";
 // import styles from './dashboard.module.scss';

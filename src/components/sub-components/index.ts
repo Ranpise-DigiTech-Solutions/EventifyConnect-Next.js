@@ -7,3 +7,4 @@ export { default as NavigationDots } from './navigation-dots';
 export { default as ScrollToTop } from './scroll-to-top';
 export { default as PackagesCard } from './packages-card/packages-card';
 export { default as TestimonialsBox } from './testimonials-box/testimonials-box';
+export { default as OTPVerificationForm } from './otp-verification-form/otp-verification-form';

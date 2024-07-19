@@ -3,7 +3,9 @@ import axios from "axios";
 
 export async function GET(req: NextRequest) {
   try {
-    const { countryName, stateName } = await req.json();
+    const { searchParams } = new URL(req.url);
+    const countryName = searchParams.get("countryName");
+    const stateName = searchParams.get("stateName");
 
     if (!countryName || !stateName) {
       return new Response(

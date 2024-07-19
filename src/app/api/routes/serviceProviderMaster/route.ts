@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     const postBody = await req.json();
 
-    if(postBody && postBody.length === 0) {
+    if(!postBody || postBody.length === 0) {
         return new Response(JSON.stringify({ message: "No customer data provided" }), {
           status: 400,
           headers: { "Content-Type": "application/json" },
@@ -43,15 +43,16 @@ export async function POST(req: NextRequest) {
     }
 
     const newDocument = new serviceProviderMaster(postBody);
+    const savedDocument = await newDocument.save(); // Save the document
 
-    if (!newDocument) {
+    if (!savedDocument) {
       return new Response(JSON.stringify({ message: "New document couldn't be created!" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify(newDocument), {
+    return new Response(JSON.stringify(savedDocument), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });

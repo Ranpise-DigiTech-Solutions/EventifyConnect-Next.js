@@ -14,6 +14,8 @@ export async function GET(
 
     const currentUserId = params.currentUserId;
 
+    console.log(currentUserId);
+
     if (!currentUserId) {
       return new Response(JSON.stringify({ message: "Invalid User Id!" }), {
         status: 400,
@@ -38,7 +40,7 @@ export async function GET(
         vendorRecord = await vendorTypes.findById(userRecord.vendorTypeId);
       }
 
-      console.log(userRecord);
+      console.log("USER RECORD", userRecord);
       return new Response(
         JSON.stringify({
           UID: currentUserId,

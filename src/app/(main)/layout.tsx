@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAppDispatch } from "@/lib/hooks";
+import { useAppDispatch } from "@/lib/hooks/use-redux-store";
 import { LoadingScreen } from "@/components/sub-components";
 
 import {

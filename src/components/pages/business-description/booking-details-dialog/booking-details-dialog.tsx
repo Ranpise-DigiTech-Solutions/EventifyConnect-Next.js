@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 // import { useHistory } from 'react-router-dom';
-import { useAppSelector } from "@/lib/hooks";
+import { useAppSelector } from "@/lib/hooks/use-redux-store";
 import axios from "axios";
 import Select, { SingleValue } from "react-select";
 
