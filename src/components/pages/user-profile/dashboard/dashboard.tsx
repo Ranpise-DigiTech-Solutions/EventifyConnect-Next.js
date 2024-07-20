@@ -8,9 +8,9 @@
 // import styles from './dashboard.module.scss';
 // import { RootState } from '@/redux/store';
 
-// type Props = {}
+type Props = {}
 
-// const DashboardContainer = (props: Props) => {
+const DashboardContainer = (props: Props) => {
 //     const chartRef = useRef(null);
 //     const bookingChartRef = useRef(null);
 //     const analyticsCurveRef = useRef(null);
@@ -126,7 +126,7 @@
 //         } else if (userType === "VENDOR") {
 //           // Logic for fetching data for VENDOR id
 //           const userId = userInfoStore.userDetails.Document._id;
-//           //  console.log(userId);
+//           //  
 //           // Filter bookings based on vendor's id
 //           const vendorpendingBookingsdata = bookingRequest.data.filter(
 //             (booking) =>
@@ -487,7 +487,7 @@
 //       const upcomingEventsData = bookingConfirmed.filter(
 //         (booking) => new Date(booking.bookingStartDateTimestamp) > currentDate
 //       );
-//       console.log(upcomingEventsData);
+//       
 //       for (const booking of upcomingEventsData) {
 //         const eventTypeResponse = await axios.get(
 //           `${
@@ -606,6 +606,6 @@
 //         </div>
 //       </>
 //     );
-// }
+}
 
-// export default DashboardContainer
+export default DashboardContainer

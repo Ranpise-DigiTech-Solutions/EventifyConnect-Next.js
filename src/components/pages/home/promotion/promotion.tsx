@@ -17,6 +17,7 @@ import VirtualizedSelect from "@/components/ui/virtualized-select";
 import { setSearchBoxFilterData } from "@/redux/slices/search-box-filter";
 import { RootState } from "@/redux/store";
 
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import styles from "./promotion.module.scss";
 
 const totalCountTemplate = {
@@ -41,6 +42,7 @@ function Number({ n }: { n: number }) {
 type Props = {};
 
 const Promotion = (props: Props) => {
+  const { executeRecaptcha } = useGoogleReCaptcha();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [totalCount, setTotalCount] = useState({ ...totalCountTemplate });
 
@@ -99,10 +101,21 @@ const Promotion = (props: Props) => {
   }, [imageList.length]);
 
   useEffect(() => {
+    if (!executeRecaptcha) {
+      return;
+    }
+
     const getHallVendorCount = async () => {
       try {
+        const captchaToken = await executeRecaptcha('inquirySubmit');
         const URL = `/api/routes/hallMaster/getHallCount/`;
-        const response: AxiosResponse<string> = await axios.get(URL);
+        const response: AxiosResponse<string> = await axios.get(URL, {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Captcha-Token': captchaToken,
+          },
+          withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+        });
 
         if (typeof response.data !== "number") {
           return;
@@ -113,10 +126,18 @@ const Promotion = (props: Props) => {
         console.error(error);
       }
     };
+
     const getOtherVendorCount = async () => {
       try {
+        const captchaToken = await executeRecaptcha('inquirySubmit');
         const URL = `/api/routes/vendorMaster/getOtherVendorsCount/`;
-        const response: AxiosResponse<string> = await axios.get(URL);
+        const response: AxiosResponse<string> = await axios.get(URL, {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Captcha-Token': captchaToken,
+          },
+          withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+        });
 
         if (typeof response.data !== "number") {
           return;
@@ -126,10 +147,18 @@ const Promotion = (props: Props) => {
         console.error(error);
       }
     };
+
     const getCustomerCount = async () => {
       try {
+        const captchaToken = await executeRecaptcha('inquirySubmit');
         const URL = `/api/routes/customerMaster/getCustomerCount/`;
-        const response: AxiosResponse<string> = await axios.get(URL);
+        const response: AxiosResponse<string> = await axios.get(URL, {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Captcha-Token': captchaToken,
+          },
+          withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+        });
 
         if (typeof response.data !== "number") {
           return;
@@ -139,10 +168,18 @@ const Promotion = (props: Props) => {
         console.error(error);
       }
     };
+
     const getBookingCount = async () => {
       try {
+        const captchaToken = await executeRecaptcha('inquirySubmit');
         const URL = `/api/routes/bookingMaster/getBookingCount/`;
-        const response: AxiosResponse<string> = await axios.get(URL);
+        const response: AxiosResponse<string> = await axios.get(URL, {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Captcha-Token': captchaToken,
+          },
+          withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+        });
 
         if (typeof response.data !== "number") {
           return;
@@ -153,11 +190,11 @@ const Promotion = (props: Props) => {
       }
     };
 
+    getBookingCount();
     getHallVendorCount();
     getOtherVendorCount();
     getCustomerCount();
-    getBookingCount();
-  }, []);
+  }, [executeRecaptcha]);
 
   return (
     <div className={`${styles.main__container} ${styles.promotion__container}`}>

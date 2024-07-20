@@ -36,6 +36,7 @@ import { LoadingScreen } from '@/components/sub-components';
 import styles from './walkIn-customer-booking.module.scss';
 import "react-phone-input-2/lib/style.css";
 import { RootState } from '@/redux/store';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 type Props = {
     open: boolean;
@@ -58,6 +59,8 @@ const WalkInCustomerBookingDialogComponent = ({ open, handleClose, hallData, ser
 
   const [bookingConfirmationScreen, setBookingConfirmationScreen] =
     useState(false); // toggle booking confirmation screen
+
+    const { executeRecaptcha } = useGoogleReCaptcha();
 
   const customStyles = {
     control: (provided : any, state: any) => ({
@@ -257,8 +260,8 @@ const WalkInCustomerBookingDialogComponent = ({ open, handleClose, hallData, ser
     }
   }, [formErrorUpdateFlag]);
 
-  console.log(hallData);
-  console.log(serviceProviderData);
+  
+  
 
   const calculateBookingDuration = () => {
     const startDate: Date = new Date(
@@ -384,8 +387,12 @@ const WalkInCustomerBookingDialogComponent = ({ open, handleClose, hallData, ser
   };
 
   const handleFormSubmit = async () => {
+    if (!executeRecaptcha) {
+      return;
+    }
     setIsLoading(true);
     try {
+      const captchaToken = await executeRecaptcha('inquirySubmit');
       const parsedStartDateObject: Date | null = parseDate(
         bookingDetails.bookingStartDate,
         "-"
@@ -409,8 +416,8 @@ const WalkInCustomerBookingDialogComponent = ({ open, handleClose, hallData, ser
         0
       );
 
-      console.log("FINAL BOOKING START DATE: " + parsedStartDateObject);
-      console.log("FINAL BOOKING END DATE: " + parsedEndDateObject);
+      
+      
 
       const postData = {
         hallId: hallData._id,
@@ -444,12 +451,18 @@ const WalkInCustomerBookingDialogComponent = ({ open, handleClose, hallData, ser
 
       const response = await axios.post(
         `/api/routes/hallBookingMaster/bookWalkInCustomer/`,
-        postData
+        postData, {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Captcha-Token': captchaToken,
+          },
+          withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+        }
       );
-      console.log(response);
+      
       handleBookingDetailsInfo("bookingId", response.data?.documentId);
     } catch (error) {
-      console.log(error);
+      
       setIsLoading(false);
     }
 
@@ -496,7 +509,7 @@ const WalkInCustomerBookingDialogComponent = ({ open, handleClose, hallData, ser
           <Button
             onClick={() => {
               handleSubmissionConfirmationDialogClose();
-              handleFormSubmit();
+                handleFormSubmit();
             }}
             autoFocus
           >

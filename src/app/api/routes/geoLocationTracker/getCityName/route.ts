@@ -31,7 +31,6 @@ export async function GET(req: NextRequest) {
         });
 
       })
-      .catch(error => (console.log('Error:', error)));
 
    
   } catch (error) {

@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { firestore } from "@/lib/db/firebase";
 import { hallBookingMaster } from "@/app/api/schemas";
+import axios from "axios";
 
 // Helper function to check if a string is a valid ObjectId
 function isObjectIdFormat(str: string): boolean {
@@ -12,6 +13,37 @@ function isObjectIdFormat(str: string): boolean {
 
 export async function POST(req: NextRequest) {
   const postData = await req.json();
+  const captchaToken = req.headers.get("X-Captcha-Token");
+
+  if (!captchaToken) {
+    return new Response(JSON.stringify({ message: "Missing captcha token!" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  // check weather the user is valid
+  const reCaptchaResponse = await axios({
+    method: "POST",
+    url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
+    data: {
+      token: captchaToken,
+    },
+    headers: {
+      Accept: "application/json, text/plain, */*",
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (reCaptchaResponse.data.success === false) {
+    return new Response(
+      JSON.stringify({ message: "Invalid reCAPTCHA response" }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
 
   if (!postData || postData.length === 0) {
     return new Response(
@@ -105,7 +137,7 @@ export async function POST(req: NextRequest) {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.log(error);
+    
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

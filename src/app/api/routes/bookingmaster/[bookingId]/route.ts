@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import connectDB from "@/lib/db/mongodb";
 import { bookingMaster } from "@/app/api/schemas";
 import { ObjectId } from "mongodb";
+import axios from "axios";
 
 // Helper function to check if a string is a valid ObjectId
 function isObjectIdFormat(str: string) {
@@ -13,10 +14,45 @@ export async function GET(
   { params }: { params: { bookingId: string } }
 ) {
   await connectDB(); // check database connection
+
   try {
+    const captchaToken = req.headers.get("X-Captcha-Token");
     const bookingId = params.bookingId;
     const { searchParams } = new URL(req.url);
     const userType = searchParams.get("userType");
+
+    if (!captchaToken) {
+      return new Response(
+        JSON.stringify({ message: "Missing captcha token!" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // check weather the user is valid
+    const reCaptchaResponse = await axios({
+      method: "POST",
+      url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
+      data: {
+        token: captchaToken,
+      },
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (reCaptchaResponse.data.success === false) {
+      return new Response(
+        JSON.stringify({ message: "Invalid reCAPTCHA response" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     // Validate customerId
     if (!bookingId || !isObjectIdFormat(bookingId)) {
@@ -213,11 +249,45 @@ export async function PUT(
 ) {
   await connectDB(); // check database connection
   try {
+    const captchaToken = req.headers.get("X-Captcha-Token");
     const bookingId = params.bookingId;
     const {
       bookingStatus,
       remarks,
     }: { bookingStatus: string; remarks: string } = await req.json();
+
+    if (!captchaToken) {
+      return new Response(
+        JSON.stringify({ message: "Missing captcha token!" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // check weather the user is valid
+    const reCaptchaResponse = await axios({
+      method: "POST",
+      url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
+      data: {
+        token: captchaToken,
+      },
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (reCaptchaResponse.data.success === false) {
+      return new Response(
+        JSON.stringify({ message: "Invalid reCAPTCHA response" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     // Validate bookingId
     if (!bookingId || !isObjectIdFormat(bookingId)) {
@@ -281,9 +351,44 @@ export async function PATCH(
   { params }: { params: { bookingId: string } }
 ) {
   await connectDB(); // check database connection
+
   try {
+    const captchaToken = req.headers.get("X-Captcha-Token");
     const bookingId = params.bookingId;
     const updatedFields: any = await req.json();
+
+    if (!captchaToken) {
+      return new Response(
+        JSON.stringify({ message: "Missing captcha token!" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // check weather the user is valid
+    const reCaptchaResponse = await axios({
+      method: "POST",
+      url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
+      data: {
+        token: captchaToken,
+      },
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (reCaptchaResponse.data.success === false) {
+      return new Response(
+        JSON.stringify({ message: "Invalid reCAPTCHA response" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     if (!bookingId || !isObjectIdFormat(bookingId)) {
       return new Response(
@@ -310,10 +415,63 @@ export async function PATCH(
       );
     }
 
+    const {bookingStatus, customerEmail, hallMainEmail, documentId, ...info} = updatedFields; 
+
+    // send emails
+    if(bookingStatus === "CONFIRMED") {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/emailService/`,
+        {
+          senderType: "INFO_EC",
+          recipientEmailId: customerEmail,
+          bcc: hallMainEmail,
+          subject: "EventifyConnect - OTP Verification",
+          message: `<p>Dear User,</p>
+
+            <p>Thank you for your order with EventifyConnect! We are pleased to confirm that your order has been received and is being processed.</p>
+
+            <p><strong>Order Number:</strong> ${documentId}</p>
+          
+            <p>Please review your order details in our website. If you have any questions or need to make changes to your order, please contact us at support@eventifyconnect.com.</p>
+
+            <p>Thank you for choosing EventifyConnect. We look forward to serving you!</p>
+
+            <p>Best regards,<br/>
+            EventifyConnect Team</p>
+
+          `,
+        }
+      );
+    } else if(bookingStatus === "CANCELLED") {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/emailService/`,
+        {
+          senderType: "INFO_EC",
+          recipientEmailId: customerEmail,
+          bcc: hallMainEmail,
+          subject: "EventifyConnect - Booking Information",
+          message: `
+              <p>Dear User,</p>
+
+            <p>We regret to inform you that your order with EventifyConnect has been cancelled.</p>
+
+            <p><strong>Order Number:</strong> ${documentId}</p>
+
+            <p>We understand that circumstances may change, and we're here to assist you. If you have any questions or need further assistance regarding this cancellation, please do not hesitate to contact us at support@eventifyconnect.com.</p>
+
+            <p>Thank you for your understanding. We hope to have the opportunity to serve you in the future.</p>
+
+            <p>Best regards,<br/>
+            EventifyConnect Team</p>
+          `,
+        }
+      );
+    }
+    
     // Update the bookingStatus to 'confirmed' or 'REJECTED' in the bookingMaster table
     const updatedBooking = await bookingMaster.findOneAndUpdate(
       { _id: bookingId },
-      { $set: updatedFields },
+      { $set: { ...info, bookingStatus } },
       { new: true }
     );
 

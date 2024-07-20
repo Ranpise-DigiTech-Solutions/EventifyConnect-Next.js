@@ -13,8 +13,10 @@ interface OTPRequest {
 
 export async function POST(req: NextRequest) {
   // Check if the request has a valid email address
-  const { emailId, token, userType } = await req.json();
-  if (!token || !userType || !emailId || !emailId.endsWith("@gmail.com")) {
+  const { emailId, userType } = await req.json();
+  const captchaToken = req.headers.get('X-Captcha-Token');
+
+  if (!captchaToken || !userType || !emailId || !emailId.endsWith("@gmail.com")) {
     return new Response(JSON.stringify({ message: "Invalid credentials" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
@@ -26,7 +28,7 @@ export async function POST(req: NextRequest) {
     method: "POST",
     url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
     data: {
-      token,
+      token: captchaToken, 
     },
     headers: {
       Accept: "application/json, text/plain, */*",
@@ -48,7 +50,7 @@ export async function POST(req: NextRequest) {
   const cookieStore = cookies();
   const currentTime = Date.now();
   const otpRequestsCookie = cookieStore.get("otp_requests");
-  console.log(otpRequestsCookie);
+  
   const otpRequests: OTPRequest[] = otpRequestsCookie?.value
     ? JSON.parse(otpRequestsCookie.value || "")
     : [];
@@ -120,7 +122,7 @@ export async function POST(req: NextRequest) {
     }
   );
 
-  console.log(response.data);
+  
 
   if (!response?.data?.sent) {
     return new Response(JSON.stringify({ message: "Failed to send OTP" }), {

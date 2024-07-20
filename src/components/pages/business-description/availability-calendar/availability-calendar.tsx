@@ -16,12 +16,15 @@ import styles from "./availability-calendar.module.scss";
 import { setBookingInfoData } from "@/redux/slices/booking-info";
 import { firebaseAuth } from "@/lib/db/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 type Props = {
   hallData: any;
 };
 
 const AvailabilityCalendarComponent = ({ hallData }: Props) => {
+  const { executeRecaptcha } = useGoogleReCaptcha();
+
   interface timeSlotsType {
     [key: number]: boolean;
   }
@@ -142,12 +145,22 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
   };
 
   const getAvailability = async () => {
+    if (!executeRecaptcha) {
+      return;
+    }
     try {
+      const captchaToken = await executeRecaptcha('inquirySubmit');
       if (startDateOfWeek && endDateOfWeek) {
         const response = await axios.get(
-          `/api/routes/hallBookingMaster/getHallAvailability/?hallId=${hallData._id}&startDate=${startDateOfWeek}&endDate=${endDateOfWeek}`
+          `/api/routes/hallBookingMaster/getHallAvailability/?hallId=${hallData._id}&startDate=${startDateOfWeek}&endDate=${endDateOfWeek}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Captcha-Token': captchaToken,
+            },
+            withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+          }
         );
-        console.log(response.data);
+        
         const bookings = response.data;
         if (bookings) {
           bookings.map(
@@ -175,7 +188,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
                 bookingStartDate < startDateOfWeek &&
                 bookingEndDate > endDateOfWeek
               ) {
-                console.log("DEBUGGING_1: ");
+                
                 // Case 1: Booking spans over the whole week
                 for (const day in tempCalendar) {
                   tempCalendar[day].timeSlots = Object.fromEntries(
@@ -189,7 +202,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
                 bookingStartDate >= startDateOfWeek &&
                 bookingEndDate > endDateOfWeek
               ) {
-                console.log("DEBUGGING_2: ");
+                
                 // Case 2: Booking starts within the week but extends beyond it
                 const bookingStartDD = bookingStartDate.getDate();
                 const endOfWeekDD = endDateOfWeek.getDate();
@@ -217,7 +230,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
                 bookingStartDate < startDateOfWeek &&
                 bookingEndDate <= endDateOfWeek
               ) {
-                console.log("DEBUGGING_3: ");
+                
                 // Case 3: Booking ends within the week but starts before it
                 const bookingEndDD = bookingEndDate.getDate();
                 const startOfWeekDD = startDateOfWeek.getDate();
@@ -250,10 +263,10 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
                 const startOfWeekDD = startDateOfWeek.getDate();
                 const endOfWeekDD = endDateOfWeek.getDate();
 
-                console.log("DEBUGGING_4 : ", startDD, endDD);
-                console.log(startDateOfWeek, endDateOfWeek);
-                // console.log(formattedStartDateOfWeek, formattedEndDateOfWeek);
-                console.log(bookingStartDate, bookingEndDate);
+                
+                
+                // 
+                
 
                 if (startDD === endDD) {
                   const bookingStartHour = bookingStartDate.getHours();
@@ -298,7 +311,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
             }
           );
         }
-        console.log("AVAILABILITY CALENDAR", availabilityCalendar);
+        
       }
     } catch (error: any) {
       console.error(error.message);
@@ -397,19 +410,22 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
 
   useEffect(() => {
     if (startDate) {
-      console.log("CHECK0" + startDate);
+      
       setStartDateOfWeek(startOfWeek(startDate));
       setEndDateOfWeek(endOfWeek(startDate));
     }
   }, [startDate]);
 
   useEffect(() => {
+    if(!executeRecaptcha) {
+      return;
+    }
     if (startDateOfWeek && endDateOfWeek) {
-      console.log("CHECK" + startDateOfWeek, endDateOfWeek);
+      
       setDates(startDateOfWeek, endDateOfWeek);
       getAvailability();
     }
-  }, [startDateOfWeek, endDateOfWeek]);
+  }, [startDateOfWeek, endDateOfWeek, executeRecaptcha]);
 
   // to fetch the data when the start date changes... condition written to check whether startDate lies in the same week... if so no need to refetch
   useEffect(() => {
@@ -459,7 +475,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
 
   // to calculate the booking duration of a booking
   useEffect(() => {
-    if (!bookingInfoStore.startTime || !bookingInfoStore.endTime) {
+    if (!bookingInfoStore.startTime || !bookingInfoStore.endTime || !executeRecaptcha) {
       return;
     }
     try {
@@ -471,7 +487,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
       const endDate: Date = new Date(
         `${bookingInfoStore.bookingEndDate}T${bookingInfoStore.endTime}:00`
       );
-      console.log("DATES : ", startDate, endDate);
+      
 
       const timeDifferenceMilliseconds: number =
         endDate.getTime() - startDate.getTime(); //;
@@ -510,6 +526,10 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
 
       // to check whether the booking overlaps with any existing ones
       const checkBookingSlotAvailability = async () => {
+        if (!executeRecaptcha) {
+          return;
+        }
+        const captchaToken = await executeRecaptcha('inquirySubmit');
         //clear any previous comments
         dispatch(setBookingInfoData({ key: "comments", value: "" }));
 
@@ -536,12 +556,18 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
         );
 
         const response = await axios.get(
-          `/api/routes/hallBookingMaster/getHallBookingsCount/?hallId=${hallData._id}&bookingStartDateTimestamp=${parsedStartDateObject}&bookingEndDateTimestamp=${parsedEndDateObject}`
+          `/api/routes/hallBookingMaster/getHallBookingsCount/?hallId=${hallData._id}&bookingStartDateTimestamp=${parsedStartDateObject}&bookingEndDateTimestamp=${parsedEndDateObject}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Captcha-Token': captchaToken,
+            },
+            withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+          }
         );
 
         const bookings = response.data;
-        console.log("Bookings: ", response.data);
-        console.log("BOOKINGS : ", bookings.count);
+        
+        
         if (bookings.count !== 0) {
           dispatch(
             setBookingInfoData({
@@ -568,6 +594,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
       console.error(error.message);
     }
   }, [
+    executeRecaptcha,
     bookingInfoStore.bookingStartDate,
     bookingInfoStore.bookingEndDate,
     bookingInfoStore.startTime,
