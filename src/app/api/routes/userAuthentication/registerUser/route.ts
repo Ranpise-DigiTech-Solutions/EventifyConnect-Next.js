@@ -1,12 +1,9 @@
 import type { NextRequest } from "next/server";
 import connectDB from "@/lib/db/mongodb";
-import { ref, set } from 'firebase/database';
+import { ref, set } from "firebase/database";
 import { firebaseDb } from "@/lib/db/firebase";
-import {
-  serviceProviderMaster,
-  customerMaster,
-} from "@/app/api/schemas";
-import axios from 'axios';
+import { serviceProviderMaster, customerMaster } from "@/app/api/schemas";
+import axios from "axios";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 
@@ -44,7 +41,37 @@ function decrypt(text: string) {
 export async function POST(req: NextRequest) {
   const { userType, data, user } = await req.json();
 
-  console.log(userType, data, user);
+  const captchaToken = req.headers.get("X-Captcha-Token");
+
+  if (!captchaToken) {
+    return new Response(JSON.stringify({ message: "Missing captcha token!" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  // check weather the user is valid
+  const reCaptchaResponse = await axios({
+    method: "POST",
+    url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
+    data: {
+      token: captchaToken,
+    },
+    headers: {
+      Accept: "application/json, text/plain, */*",
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (reCaptchaResponse.data.success === false) {
+    return new Response(
+      JSON.stringify({ message: "Invalid reCAPTCHA response" }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
 
   if (!data || data.length === 0 || !user || user.length === 0 || !userType) {
     return new Response(
@@ -69,60 +96,76 @@ export async function POST(req: NextRequest) {
     const cipherText = encrypt(data.password);
 
     const existingCustomers = await customerMaster.find({
-        $or: [
-            { "customerEmail": data.email },
-            { "customerContact": data.phone }
-        ]
+      $or: [{ customerEmail: data.email }, { customerContact: data.phone }],
     });
 
     const existingVendors = await serviceProviderMaster.find({
-        $or: [
-            { "vendorEmail": data.email },
-            { "vendorContact": data.phone }
-        ]
+      $or: [{ vendorEmail: data.email }, { vendorContact: data.phone }],
     });
 
     if (existingCustomers.length > 0 || existingVendors.length > 0) {
-        return new Response(
-          JSON.stringify({ message: "Email or phone already exists" }),
-          {
-            status: 404,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+      return new Response(
+        JSON.stringify({ message: "Email or phone already exists" }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
-    const response = userType === "CUSTOMER" ? await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/customerMaster/`, {
-        customerUid: user.uid,
-        customerName: data.fullName,
-        customerEmail: data.email,
-        customerPassword: cipherText,
-        customerContact: data.phone,
-        customerCurrentLocation: data.location,
-        programId: "USER"
-    }) : await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/serviceProviderMaster/`, {
-        vendorUid: user.uid,
-        vendorName: data.fullName,
-        vendorTypeId: data.vendorTypeInfo,
-        vendorCurrentLocation: data.location,
-        vendorContact: data.phone,
-        vendorEmail: data.email,
-        vendorPassword: cipherText,
-        vendorCompanyName: data.brandName,
-        vendorLocation: data.cityName,
-        eventTypes: data.eventTypesInfo,
-        programId: "USER"
-    });
 
-    console.log("PUSHED DATA TO MONGO");
+    const response =
+      userType === "CUSTOMER"
+        ? await axios.post(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/customerMaster/`,
+            {
+              customerUid: user.uid,
+              customerName: data.fullName,
+              customerEmail: data.email,
+              customerPassword: cipherText,
+              customerContact: data.phone,
+              customerCurrentLocation: data.location,
+              programId: "USER",
+            }, {
+              headers: {
+                'Content-Type': 'application/json',
+                'Program-Type': "SERVER"
+              },
+              withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+            }
+          )
+        : await axios.post(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/serviceProviderMaster/`,
+            {
+              vendorUid: user.uid,
+              vendorName: data.fullName,
+              vendorTypeId: data.vendorTypeInfo,
+              vendorCurrentLocation: data.location,
+              vendorContact: data.phone,
+              vendorEmail: data.email,
+              vendorPassword: cipherText,
+              vendorCompanyName: data.brandName,
+              vendorLocation: data.cityName,
+              eventTypes: data.eventTypesInfo,
+              programId: "USER",
+            }, {
+              headers: {
+                'Content-Type': 'application/json',
+                "Program-Type": "SERVER"
+              },
+              withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+            }
+          );
 
-    const userRef = ref(firebaseDb, 'Users/' + user.uid);
+    
+
+    const userRef = ref(firebaseDb, "Users/" + user.uid);
     await set(userRef, {
-        userType: userType,
-        name: data.fullName,
-        email: data.email,
-        contact: data.phone,
-        _id: response.data._id,
+      userType: userType,
+      name: data.fullName,
+      email: data.email,
+      contact: data.phone,
+      _id: response.data._id,
     });
 
     const jwtSecretKey = process.env.JWT_SECRET_KEY;
@@ -131,18 +174,16 @@ export async function POST(req: NextRequest) {
       throw new Error("JWT_SECRET_KEY environment variable is not set.");
     }
 
-    const accessToken = jwt.sign(
-        { id: response.data._id },
-        jwtSecretKey,
-        { expiresIn: "1w"}
-    );
+    const accessToken = jwt.sign({ id: response.data._id }, jwtSecretKey, {
+      expiresIn: "1w",
+    });
 
     return new Response(JSON.stringify({ accessToken }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.log(error);
+    
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

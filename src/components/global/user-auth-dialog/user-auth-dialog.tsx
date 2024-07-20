@@ -48,6 +48,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import { FcGoogle } from "react-icons/fc";
 import { FaUserAlt, FaEdit } from "react-icons/fa";
 
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import styles from "./user-auth-dialog.module.scss";
 import { firebaseAuth } from "@/lib/db/firebase";
 import { verifyUserByEmail } from "@/lib/utils/verify-user";
@@ -79,6 +80,7 @@ const UserAuthDialogComponent = ({
   handleClose,
   handleRegistrationDialogOpen,
 }: Props) => {
+  const { executeRecaptcha } = useGoogleReCaptcha();
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -259,7 +261,12 @@ const UserAuthDialogComponent = ({
   };
 
   const handleSignInWithPassword = async () => {
+    if(!executeRecaptcha) {
+      return;
+    }
     setLoadingScreen(true);
+    const captchaToken = await executeRecaptcha('inquirySubmit');
+
     if (
       inputValue &&
       signInPasswordValue &&
@@ -276,7 +283,13 @@ const UserAuthDialogComponent = ({
         // verify wether user exists and verify his password before signing-in
         const response = await axios.post(
           `/api/routes/userAuthentication/loginWithPassword/`,
-          postData
+          postData, {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Captcha-Token': captchaToken,
+            },
+            withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+          }
         );
         localStorage.setItem("userAccessToken", JSON.stringify(response.data));
         await signInWithEmailAndPassword(
@@ -304,7 +317,7 @@ const UserAuthDialogComponent = ({
     } catch (error: any) {
       console.error(error.message);
     }
-  }, [signInPasswordError, signInPasswordErrorUpdateFlag]);
+  }, [signInPasswordError, signInPasswordErrorUpdateFlag, executeRecaptcha]);
 
   // const handleEmailLinkSignIn = async (inputType, inputValue) => {
   //   try {
@@ -339,7 +352,7 @@ const UserAuthDialogComponent = ({
           // Handle Errors here.
           const errorCode = error.code;
           const errorMessage = error.message;
-          console.log(errorMessage);
+          
           // The email of the user's account used.
           const email = error.customData.email;
           // The AuthCredential type that was used.
@@ -366,7 +379,7 @@ const UserAuthDialogComponent = ({
           const token = credential?.accessToken;
 
           const user = result.user;
-          console.log(user.email);
+          
           // IdP data available using getAdditionalUserInfo(result)
           // ...
         })
@@ -389,11 +402,11 @@ const UserAuthDialogComponent = ({
   //   firebaseAuth.languageCode = "it";
   //   try {
   //     const onCaptchaVerification = () => {
-  //       console.log("ENTERED");
+  //       
   //       signInWithPhoneNumber(firebaseAuth, "+919740605350", reCaptchaVerifier)
   //         .then((confirmationResult) => {
   //           // Store confirmationResult for later use
-  //           console.log(confirmationResult);
+  //           
   //           // Prompt user to enter verification code
   //           // Handle the confirmation code from the user
   //           // const verificationCode = prompt('Enter the verification code sent to your phone:');
@@ -402,14 +415,14 @@ const UserAuthDialogComponent = ({
   //           //     confirmationResult.confirm(verificationCode)
   //           //         .then((result) => {
   //           //             // User successfully signed in
-  //           //             console.log("User signed in successfully:", result.user);
+  //           //             
   //           //         })
   //           //         .catch((error) => {
   //           //             // Error confirming verification code
   //           //             console.error("Error confirming verification code:", error);
   //           //         });
   //           // } else {
-  //           //     console.log("No verification code entered.");
+  //           //     
   //           // }
   //         })
   //         .catch((error) => {
@@ -432,8 +445,13 @@ const UserAuthDialogComponent = ({
   // };
 
   const handleSignUp = async () => {
+    if(!executeRecaptcha) {
+      return;
+    }
     // here the postdata will be customerInfo and vendorInfo Object defined above
     setLoadingScreen(true);
+    const captchaToken = await executeRecaptcha('inquirySubmit');
+
     try {
       const userCredential =
         userType === "CUSTOMER"
@@ -467,7 +485,13 @@ const UserAuthDialogComponent = ({
         };
       }
 
-      const response = await axios.post(url, postData);
+      const response = await axios.post(url, postData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Captcha-Token': captchaToken,
+        },
+        withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+      });
       localStorage.setItem("userAccessToken", response.data);
       dispatch(toggleUserAuthStateChangeFlag());
       setLoadingScreen(false);
@@ -482,16 +506,15 @@ const UserAuthDialogComponent = ({
 
   // to trigger handleSignUp once users have verified their respective OTP's
   useEffect(() => {
-    console.log("USERAUTHDIALOG " + firebaseAuth.currentUser);
     if(!isOTPVerified) {
       return;
     }
     try {
       handleSignUp();
     } catch (error) {
-      console.log(error);
+      
     }
-  }, [isOTPVerified]);
+  }, [isOTPVerified, executeRecaptcha]);
 
   const customSelectStyles = {
     control: (provided: any, state: any) => ({
@@ -528,7 +551,11 @@ const UserAuthDialogComponent = ({
         setInputError("Couldn't find your account");
       } else {
         setLoadingScreen(true);
-        const userExists = await verifyUserByEmail(inputValue);
+        let userExists = false;        
+        if (executeRecaptcha) {
+          const captchaToken = await executeRecaptcha('inquirySubmit');
+          userExists = await verifyUserByEmail(inputValue, captchaToken);
+        }
         if (!userExists) {
           setInputError("Couldn't find your account. Sign Up to continue!");
         } else {
@@ -565,9 +592,13 @@ const UserAuthDialogComponent = ({
           handleErrorInfo("email", "Couldn't find your account");
         } else {
           setLoadingScreen(true);
-          const userExists = await verifyUserByEmail(
-            vendorInfo.email,
-          );
+          let userExists = false;        
+          if (executeRecaptcha) {
+            const captchaToken = await executeRecaptcha('inquirySubmit');
+            userExists = await verifyUserByEmail(
+              vendorInfo.email, captchaToken
+            );
+          }
           if (userExists) {
             handleErrorInfo(
               "email",
@@ -641,9 +672,13 @@ const UserAuthDialogComponent = ({
         handleErrorInfo("email", "Couldn't find your account");
       } else {
         setLoadingScreen(true);
-        const userExists = await verifyUserByEmail(
-          customerInfo.email,
-        );
+        let userExists = false;        
+        if (executeRecaptcha) {
+          const captchaToken = await executeRecaptcha('inquirySubmit');
+          userExists = await verifyUserByEmail(
+            customerInfo.email, captchaToken
+          );
+        }
         if (userExists) {
           handleErrorInfo(
             "email",
@@ -737,7 +772,7 @@ const UserAuthDialogComponent = ({
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    console.log(inputType + "  " + inputValue + "  " + authType);
+    
 
     if (authType === "LOGIN") {
       validateLoginForm();

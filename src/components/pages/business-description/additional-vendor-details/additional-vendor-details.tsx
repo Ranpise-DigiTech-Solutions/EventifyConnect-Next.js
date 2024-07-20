@@ -282,7 +282,7 @@ const AdditionalVendorDetailsComponent = ({
 
   const handleBookBtnClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     const currentUser = firebaseAuth.currentUser;
-    console.log("CURRENT USER", currentUser);
+    
     if (!currentUser) {
       handleSignInAlertDialogOpen();
       return;

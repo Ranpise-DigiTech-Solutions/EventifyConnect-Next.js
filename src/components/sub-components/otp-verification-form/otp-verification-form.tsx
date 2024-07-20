@@ -126,9 +126,15 @@ const OtpVerificationFormSubContainer = ({
       const response = await axios.post(
         "/api/routes/userAuthentication/generateOTP/",
         {
-          token,
           userType,
           emailId,
+        }
+        , {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Captcha-Token': token,
+          },
+          withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
         }
       );
       if (typeof response?.data?.otp === "number") {

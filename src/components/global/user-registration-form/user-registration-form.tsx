@@ -35,6 +35,7 @@ import { firebaseStorage } from "@/lib/db/firebase";
 import styles from "./user-registration-form.module.scss";
 import "react-phone-input-2/lib/style.css";
 import { RootState } from "@/redux/store";
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 type Props = {
   open: boolean;
@@ -43,6 +44,7 @@ type Props = {
 
 const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
   const theme = useTheme();
+  const { executeRecaptcha } = useGoogleReCaptcha();
   // const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
 
   // // Define the Transition component with correct types
@@ -54,7 +56,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
 
   // const onDrop = useCallback((acceptedFiles) => {
   //   // Do something with the uploaded files (e.g., display or process them)
-  //   console.log(acceptedFiles);
+  //   
   // }, []);
 
   const customSelectStyles = {
@@ -884,7 +886,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
 
         const businessImagesUrl = await Promise.all(uploadBusinessImages);
         handleCommonData("imagesUrl", businessImagesUrl);
-        console.log("businessImagesUrl", businessImagesUrl);
+        
 
         // Registration Document Upload
         const hallRegisterDocumentRef = ref(
@@ -897,10 +899,10 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
         );
         const registrationDocumentUrl = await getDownloadURL(snapshot.ref);
         handleCommonData("registerDocumentUrl", registrationDocumentUrl);
-        console.log("registerDocumentUrl", registrationDocumentUrl);
+        
         setIsFileUploadComplete(true);
       } else if (userType === "CUSTOMER") {
-        console.log("ENTERED_CUSTOMER_STORAGE");
+        
         const customerProfileImageRef = ref(
           firebaseStorage,
           `CUSTOMER/${userInfo.userDetails.UID}/ProfileImage/${customerData.customerProfileImage?.name}`
@@ -930,11 +932,15 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
     } catch (error) {
       console.error(error);
     }
-  }, [isFileUploadComplete]);
+  }, [isFileUploadComplete, executeRecaptcha]);
 
   const handleFormSubmit = async () => {
-    setLoadingScreen(true);
+    if (!executeRecaptcha) {
+      return;
+    }
 
+    setLoadingScreen(true);
+    const captchaToken = await executeRecaptcha('inquirySubmit');
     let data = {};
     let URL = "";
     if (userType === "VENDOR") {
@@ -1060,9 +1066,21 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
     }
 
     try {
-      console.log(data);
-      const response = userType === "VENDOR" ? await axios.post(URL, data) : await axios.patch(URL, data);
-      console.log(response.data);
+      
+      const response = userType === "VENDOR" ? await axios.post(URL, data, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Captcha-Token': captchaToken,
+        },
+        withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+      }) : await axios.patch(URL, data, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Captcha-Token': captchaToken,
+        },
+        withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+      });
+      
     } catch (error: any) {
       setLoadingScreen(false);
       console.error(error.message);

@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAppSelector } from "@/lib/hooks/use-redux-store";
 import { DatePicker, Tag, Modal, Skeleton, Empty } from "antd";
 import TablePagination from "@mui/material/TablePagination";
@@ -25,17 +25,22 @@ import {
 import { BookingDetailsDialog } from "..";
 import { RootState } from "@/redux/store";
 import styles from "./booking-history.module.scss";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 
 type Props = {
   hallId: string;
 };
 
 const BookingHistoryComponent = ({ hallId }: Props) => {
+  const { executeRecaptcha } = useGoogleReCaptcha();
+
   const userInfoStore = useAppSelector((state: RootState) => state.userInfo);
   const userType = userInfoStore.userDetails.userType || "";
   const vendorType = userInfoStore.userDetails.vendorType || "";
 
   const { RangePicker } = DatePicker;
+  const bookingCancelDialogFormRef = useRef<HTMLFormElement>(null);
+  const bookingConfirmDialogFormRef = useRef<HTMLFormElement>(null);
 
   interface anchorElMapType {
     [key: string]: any;
@@ -62,7 +67,7 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
     openBookingConfirmConfirmationDialog,
     setOpenBookingConfirmConfirmationDialog,
   ] = useState<boolean>(false); // toggle booking confirmation screen
-const [alertDialog, setAlertDialog] = useState<boolean>(false); // to display error messages
+  const [alertDialog, setAlertDialog] = useState<boolean>(false); // to display error messages
 
   const [pageNo, setPageNo] = useState<number>(0); // current page no.
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
@@ -166,16 +171,17 @@ const [alertDialog, setAlertDialog] = useState<boolean>(false); // to display er
   }, [startDate]);
 
   useEffect(() => {
-    if (!startDateOfMonth || !endDateOfMonth) {
+    if (!startDateOfMonth || !endDateOfMonth || !executeRecaptcha) {
       return;
     }
 
     const getUserBookings = async () => {
       setIsPageLoading(true);
+      const captchaToken = await executeRecaptcha("inquirySubmit");
 
       setTimeout(async () => {
         try {
-          console.log(startDateOfMonth, endDateOfMonth);
+          
           const URL =
             userType === "CUSTOMER"
               ? `/api/routes/bookingMaster/getUserBookings/?customerId=${userInfoStore.userDetails.Document._id}&startDateOfMonth=${startDateOfMonth}&endDateOfMonth=${endDateOfMonth}&page=${pageNo}&limit=${rowsPerPage}&sortCriteria=${dataSortCriteria}&bookingCategory=${currentTab}`
@@ -184,21 +190,28 @@ const [alertDialog, setAlertDialog] = useState<boolean>(false); // to display er
 
           if (!URL) return;
 
-          const response = await axios.get(URL);
+          const response = await axios.get(URL, {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Captcha-Token": captchaToken,
+            },
+            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
+          });
 
-          console.log(response.data);
+          
           setUserBookings(response.data[0].bookings);
           setTotalPages(response.data[0].total[0]?.count || 1);
 
           setIsPageLoading(false);
         } catch (error) {
-          console.log("Error fetching bookings:", error);
+          
         }
       }, 2000);
     };
 
     getUserBookings();
   }, [
+    executeRecaptcha,
     startDateOfMonth,
     endDateOfMonth,
     dataSortCriteria,
@@ -237,53 +250,63 @@ const [alertDialog, setAlertDialog] = useState<boolean>(false); // to display er
   };
 
   const handleViewDetailsClick = () => {
-    console.log("SELECTED_BOOKING", selectedBooking);
+    
     // setSelectedBooking(selectedBooking);
     setIsBookingDetailsDialogOpen(true);
     handleMoreVertIconClose();
   };
 
-  const handleCancelBooking = async (event: any) => {
+  const handleCancelBooking = async (event: React.FormEvent<HTMLFormElement>) => {
     // Handle cancel booking logic
     event.preventDefault();
 
-    if (!selectedBooking) {
+    if (!selectedBooking || !executeRecaptcha || !bookingCancelDialogFormRef.current) {
+      console.log("ENTERED ")
       return;
     }
 
     try {
+      const captchaToken = await executeRecaptcha("inquirySubmit");
+      handleBookingCancelConfirmationDialogClose();
+      setIsPageLoading(true);
 
-    handleBookingCancelConfirmationDialogClose();
-    setIsPageLoading(true);
+      const formData = new FormData(bookingCancelDialogFormRef.current);
+      const formJson =Object.fromEntries((formData as any).entries());
+      const message = formJson.message;
 
-    const formData = new FormData(event.currentTarget);
-    const formJson = Object.fromEntries(formData.entries());
-    const message = formJson.message;
+      const response = await axios.patch(
+        `/api/routes/bookingMaster/${selectedBooking._id}`,
+        {
+          bookingStatus: "CANCELLED",
+          bookingStatusRemark: message,
+          customerEmail: selectedBooking.customerEmail || "",
+          hallMainEmail: selectedBooking.hallMainEmail || "",
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Captcha-Token": captchaToken,
+          },
+          withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
+        }
+      );
 
-    const response = await axios.patch(
-      `/api/routes/bookingMaster/${selectedBooking._id}`,
-      {
-        bookingStatus: "CANCELLED",
-        bookingStatusRemark: message,
-      }
-    );
+      setIsPageLoading(false);
 
-    setIsPageLoading(false);
-   
-    handleMoreVertIconClose(); // Close menu after action
-    setReloadData(!reloadData);
-  } catch (error) {
-    console.log(error);
-    setIsPageLoading(false);
-    handleMoreVertIconClose(); // Close menu after action
-    setAlertDialog(true);
-  }
+      handleMoreVertIconClose(); // Close menu after action
+      setReloadData(!reloadData);
+    } catch (error) {
+      
+      setIsPageLoading(false);
+      handleMoreVertIconClose(); // Close menu after action
+      setAlertDialog(true);
+    }
   };
 
   const handleConfirmBooking = async (event: any) => {
     event.preventDefault();
 
-    if (!selectedBooking) {
+    if (!selectedBooking || !executeRecaptcha) {
       return;
     }
 
@@ -291,12 +314,19 @@ const [alertDialog, setAlertDialog] = useState<boolean>(false); // to display er
       handleBookingConfirmConfirmationDialogClose();
       setIsPageLoading(true);
 
-      const formData = new FormData(event.currentTarget);
-      const formJson = Object.fromEntries(formData.entries());
-      const message = formJson.message;
-
+      // const formData = new FormData(event.currentTarget);
+      // const formJson =Object.fromEntries((formData as any).entries());
+      // const message = formJson.message;
+      const captchaToken = await executeRecaptcha("inquirySubmit");
       const bookingMasterRes = await axios.get(
-        `/api/routes/bookingMaster/${selectedBooking._id}`
+        `/api/routes/bookingMaster/${selectedBooking._id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Captcha-Token": captchaToken,
+          },
+          withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
+        }
       );
 
       const bookingDetails = bookingMasterRes.data;
@@ -317,32 +347,57 @@ const [alertDialog, setAlertDialog] = useState<boolean>(false); // to display er
         ...info
       } = bookingDetails;
 
+      const captchaToken2 = await executeRecaptcha("inquirySubmit");
       // set the status as confirmed in bookingMaster
-      await axios.patch(`/api/routes/bookingMaster/${selectedBooking._id}`, {
-        bookingStatus: "CONFIRMED",
-        bookingStatusRemark: message,
-      });
+      await axios.patch(
+        `/api/routes/bookingMaster/${selectedBooking._id}`,
+        {
+          bookingStatus: "CONFIRMED",
+          bookingStatusRemark: "",
+          customerEmail: selectedBooking.customerEmail || "",
+          hallMainEmail: selectedBooking.hallMainEmail || "",
+          documentId: selectedBooking.documentId || "",
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Captcha-Token": captchaToken2,
+          },
+          withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
+        }
+      );
 
+      const captchaToken3 = await executeRecaptcha("inquirySubmit");
       // push the confirmed booking to hallBookingMaster
-      await axios.post(`api/routes/hallBookingMaster/`, {
-        ...info,
-        finalVegRate: customerVegRate,
-        finalNonVegRate: customerNonVegRate,
-        finalVegItemsList: customerVegItemsList,
-        finalNonVegItemsList: customerNonVegItemsList,
-        finalGuestCount: guestsCount,
-        finalHallParkingRequirement: parkingRequirement,
-        bookingStatus: "CONFIRMED",
-        finalRoomCount: roomsCount,
-        finalVehicleCount: vehiclesCount,
-        bookingStatusRemark: message,
-      });
+      await axios.post(
+        `api/routes/hallBookingMaster/`,
+        {
+          ...info,
+          finalVegRate: customerVegRate,
+          finalNonVegRate: customerNonVegRate,
+          finalVegItemsList: customerVegItemsList,
+          finalNonVegItemsList: customerNonVegItemsList,
+          finalGuestCount: guestsCount,
+          finalHallParkingRequirement: parkingRequirement,
+          bookingStatus: "CONFIRMED",
+          finalRoomCount: roomsCount,
+          finalVehicleCount: vehiclesCount,
+          bookingStatusRemark: "",
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Captcha-Token": captchaToken3,
+          },
+          withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
+        }
+      );
 
       setIsPageLoading(false);
       handleMoreVertIconClose(); // Close menu after action
       setReloadData(!reloadData);
     } catch (error) {
-      console.log("Error confirming booking:", error);
+      console.log(error);
       setIsPageLoading(false);
       handleMoreVertIconClose(); // Close menu after action
       setAlertDialog(true);
@@ -413,14 +468,6 @@ const [alertDialog, setAlertDialog] = useState<boolean>(false); // to display er
         />
       )}
       <Dialog
-        open={openBookingCancelConfirmationDialog}
-        onClose={handleBookingCancelConfirmationDialogClose}
-        PaperProps={{
-          component: "form",
-          onSubmit: handleCancelBooking,
-        }}
-      >
-        <Dialog
           open={alertDialog}
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
@@ -440,6 +487,15 @@ const [alertDialog, setAlertDialog] = useState<boolean>(false); // to display er
             </Button>
           </DialogActions>
         </Dialog>
+      <Dialog
+        open={openBookingCancelConfirmationDialog}
+        onClose={handleBookingCancelConfirmationDialogClose}
+        PaperProps={{
+          component: "form",
+          onSubmit: handleCancelBooking,
+          ref: bookingCancelDialogFormRef
+        }}
+      >
         <DialogTitle>Cancel Booking</DialogTitle>
         <DialogContent>
           <DialogContentText>

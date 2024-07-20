@@ -7,7 +7,7 @@ import nodemailer from "nodemailer";
 
 export async function POST(req: NextRequest) {
   const reqBody = await req.json();
-  const { senderType, recipientEmailId, subject, message } = reqBody;
+  const { senderType, recipientEmailId, subject, message, bcc } = reqBody;
 
   if (!senderType || !recipientEmailId || !recipientEmailId?.endsWith("@gmail.com") || !subject || !message) {
     return new Response(
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  console.log(senderType, recipientEmailId, subject, message);
+  
 
   let senderEmailId: string | undefined = "";
   let senderEmailPassword: string | undefined = "";
@@ -76,6 +76,7 @@ export async function POST(req: NextRequest) {
     let info = await transporter.sendMail({
       from: from,
       to: recipientEmailId,
+      bcc: bcc ? bcc : "",
       subject: subject,
       html: message,
     });

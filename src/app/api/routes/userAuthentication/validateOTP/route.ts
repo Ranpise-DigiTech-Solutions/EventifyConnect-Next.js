@@ -2,13 +2,20 @@ import { NextRequest } from "next/server";
 import { doc, getDoc } from "firebase/firestore";
 import { firestore } from "@/lib/db/firebase";
 import { firebaseAdminAuth } from "@/lib/db/firebase-admin";
+import axios from "axios";
 
 // Assuming you have a way to store and verify OTPs, e.g., a database or in-memory store
 
 export async function POST(req: NextRequest) {
   const { inputOTP, userType, emailId, authType } = await req.json();
   // otp should be in string format
-  if (!userType || !authType || !emailId || !inputOTP || typeof inputOTP === "number") {
+  if (
+    !userType ||
+    !authType ||
+    !emailId ||
+    !inputOTP ||
+    typeof inputOTP === "number"
+  ) {
     return new Response(
       JSON.stringify({ valid: false, message: "Invalid credentials" }),
       {
@@ -28,13 +35,15 @@ export async function POST(req: NextRequest) {
     const otpExpiryTime = 5 * 60 * 1000; // 5 minutes in milliseconds
 
     // Check if OTP is valid
-    if (parseInt(inputOTP) === otpData.otp && currentTime - createdAt < otpExpiryTime) {
-
-      if(authType === "LOGIN") {
+    if (
+      parseInt(inputOTP) === otpData.otp &&
+      currentTime - createdAt < otpExpiryTime
+    ) {
+      if (authType === "LOGIN") {
         // Authenticate user with Firebase Admin SDK
         const userRecord = await firebaseAdminAuth.getUserByEmail(emailId);
-  
-        if(!userRecord) {
+
+        if (!userRecord) {
           return new Response(
             JSON.stringify({ valid: false, message: "User not found" }),
             {
@@ -43,12 +52,12 @@ export async function POST(req: NextRequest) {
             }
           );
         }
-  
+
         // Generate a custom token
         const customToken = await firebaseAdminAuth.createCustomToken(
           userRecord.uid
         );
-  
+
         return new Response(
           JSON.stringify({
             valid: true,

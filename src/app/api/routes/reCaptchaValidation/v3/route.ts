@@ -11,9 +11,11 @@ export async function POST(req: NextRequest) {
   const { token } = await req.json();
   const SECRET_KEY: string = process.env.GOOGLE_V3_RECAPTCHA_SECRET_KEY || "";
 
+  // 
+
   if (!token) {
     return new Response(JSON.stringify({ message: "Invalid site token!!" }), {
-      status: 400,
+      status: 404,
       headers: { "Content-Type": "application/json" },
     });
   }
@@ -30,6 +32,8 @@ export async function POST(req: NextRequest) {
         }
       }
     );
+
+    // 
 
     if (response && response.data?.success && response.data?.score > 0.5) {
       return new Response(

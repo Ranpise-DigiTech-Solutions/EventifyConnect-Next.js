@@ -4,7 +4,7 @@ let isConnected = false;
 
 export const connectDB = async () => {
     if (isConnected) {
-        console.log('Using existing database connection');
+        
         return;
     }
 
@@ -17,7 +17,7 @@ export const connectDB = async () => {
         await mongoose.connect(URL);
 
         isConnected = true;
-        console.log('Database connected successfully!');
+        
     } catch (error) {
         console.error('Error connecting to database:', error);
         throw new Error('Database connection error');

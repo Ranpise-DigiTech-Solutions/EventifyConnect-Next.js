@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { useEffect, useState } from "react";
 // import { useHistory } from 'react-router-dom';
@@ -32,8 +32,8 @@ import ErrorIcon from "@mui/icons-material/Error";
 import { FaLandmark, FaCar } from "react-icons/fa";
 import { GiSandsOfTime } from "react-icons/gi";
 
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { LoadingScreen } from "@/components/sub-components";
-import emailjs from "emailjs-com";
 import styles from "./booking-details-dialog.module.scss";
 import { RootState } from "@/redux/store";
 
@@ -50,6 +50,7 @@ const BookingDetailsDialogComponent = ({
   hallData,
   serviceProviderData,
 }: Props) => {
+  const { executeRecaptcha } = useGoogleReCaptcha();
   // const history = useHistory();
   const dataStore = useAppSelector((state: RootState) => state.dataInfo); // CITIES, EVENT_TYPES & VENDOR_TYPES data
   const bookingInfoStore = useAppSelector(
@@ -65,7 +66,7 @@ const BookingDetailsDialogComponent = ({
   const [formErrorUpdateFlag, setFormErrorUpdateFlag] = useState(false); // error update flag for form
   const [bookingConfirmationScreen, setBookingConfirmationScreen] =
     useState(false); // toggle booking confirmation screen
-    const [alertDialog, setAlertDialog] = useState(false); // to show error messages 
+  const [alertDialog, setAlertDialog] = useState(false); // to show error messages
 
   // type of react select options
   interface ReactSelectOptionType {
@@ -211,8 +212,8 @@ const BookingDetailsDialogComponent = ({
     }));
   };
 
-  console.log(serviceProviderData);
-  console.log(hallData);
+  
+  
 
   function parseDate(dateString: string, splitCriteria: string): Date | null {
     if (splitCriteria === "/") {
@@ -268,12 +269,16 @@ const BookingDetailsDialogComponent = ({
     }
     if (!bookingDetails.guestsCount) {
       handleBookingDetailsErrorInfo("guestsCount", "Guests count is required");
+    } else if (bookingDetails.guestsCount < 0 ) {
+      handleBookingDetailsErrorInfo("guestsCount", "Guest count cannot be less than 0");
     } else {
       handleBookingDetailsErrorInfo("guestsCount", "");
     }
     if (!bookingDetails.roomsCount) {
       handleBookingDetailsErrorInfo("roomsCount", "Rooms count is required");
-    } else {
+    }else if (bookingDetails.roomsCount < 0 ) {
+      handleBookingDetailsErrorInfo("roomsCount", "Rooms count cannot be less than 0");
+    }  else {
       handleBookingDetailsErrorInfo("roomsCount", "");
     }
     if (!bookingDetails.vehiclesCount) {
@@ -332,8 +337,13 @@ const BookingDetailsDialogComponent = ({
   };
 
   const handleFormSubmit = async () => {
+    if (!executeRecaptcha) {
+      return;
+    }
+
     setIsLoading(true);
     try {
+      const captchaToken = await executeRecaptcha("inquirySubmit");
       const parsedStartDateObject: Date | null = parseDate(
         bookingInfoStore.bookingStartDate,
         "-"
@@ -354,10 +364,7 @@ const BookingDetailsDialogComponent = ({
         0,
         0
       );
-
-      console.log("FINAL BOOKING START DATE: " + parsedStartDateObject);
-      console.log("FINAL BOOKING END DATE: " + parsedEndDateObject);
-
+      
       const postData = {
         hallId: hallData._id,
         hallCity: hallData.hallCity,
@@ -398,12 +405,22 @@ const BookingDetailsDialogComponent = ({
         customerSuggestion: bookingDetails.customerSuggestion,
       };
 
-      const response = await axios.post(`/api/routes/bookingMaster/`, postData);
-      console.log(response);
+      const response = await axios.post(
+        `/api/routes/bookingMaster/`,
+        postData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Captcha-Token": captchaToken,
+          },
+          withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
+        }
+      );
+      
       setIsLoading(false);
       handleBookingDetailsInfo("bookingId", response.data?.documentId);
     } catch (error) {
-      console.log(error);
+      
       setIsLoading(false);
       setAlertDialog(true);
     }
@@ -430,25 +447,31 @@ const BookingDetailsDialogComponent = ({
         </div>
       )}
       <Dialog
-          open={alertDialog}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-        >
-          <DialogTitle id="alert-dialog-title">
-            {"Unexpected Error Occurred"}
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              An unexpected error occurred while processing your request. Please
-              try again later.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => {setAlertDialog(false); handleClose();}} autoFocus>
-              Agree
-            </Button>
-          </DialogActions>
-        </Dialog>
+        open={alertDialog}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Unexpected Error Occurred"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            An unexpected error occurred while processing your request. Please
+            try again later.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setAlertDialog(false);
+              handleClose();
+            }}
+            autoFocus
+          >
+            Agree
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Dialog
         open={submissionConfirmationDialog}
         onClose={handleSubmissionConfirmationDialogClose}
@@ -471,7 +494,7 @@ const BookingDetailsDialogComponent = ({
           <Button
             onClick={() => {
               handleSubmissionConfirmationDialogClose();
-              handleFormSubmit();
+                handleFormSubmit();
             }}
             autoFocus
           >
@@ -493,31 +516,33 @@ const BookingDetailsDialogComponent = ({
               <div className={styles.bookingDetails__wrapper}>
                 <h2 className={styles.title}>Booking Details</h2>
                 <div className={styles.details__wrapper}>
-                  <div className={styles['sub-wrapper']}>
+                  <div className={styles["sub-wrapper"]}>
                     <div className={styles.key}>Booking Id:</div>
-                    <div className={styles.value}>{bookingDetails.bookingId}</div>
+                    <div className={styles.value}>
+                      {bookingDetails.bookingId}
+                    </div>
                   </div>
                   <div className={styles.verticalLineSeparator}></div>
-                  <div className={styles['sub-wrapper']}>
+                  <div className={styles["sub-wrapper"]}>
                     <div className={styles.key}>Start Date:</div>
                     <div className={styles.value}>
                       {bookingInfoStore.bookingStartDate}
                     </div>
                   </div>
                   <div className={styles.verticalLineSeparator}></div>
-                  <div className={styles['sub-wrapper']}>
+                  <div className={styles["sub-wrapper"]}>
                     <div className={styles.key}>End Date:</div>
                     <div className={styles.value}>
                       {bookingInfoStore.bookingEndDate}
                     </div>
                   </div>
                   <div className={styles.verticalLineSeparator}></div>
-                  <div className={styles['sub-wrapper']}>
+                  <div className={styles["sub-wrapper"]}>
                     <div className={styles.key}>Total:</div>
                     <div className={styles.value}>$0</div>
                   </div>
                   <div className={styles.verticalLineSeparator}></div>
-                  <div className={styles['sub-wrapper']}>
+                  <div className={styles["sub-wrapper"]}>
                     <div className={styles.key}>Status:</div>
                     <div className={styles.value}>PENDING</div>
                   </div>
@@ -538,19 +563,21 @@ const BookingDetailsDialogComponent = ({
         <div className={styles.bookingDetailsMain__container}>
           <div className={styles.headings__wrapper}>
             <h1 className={styles.heading}>booking form</h1>
-            <h6 className={styles['sub-heading']}>
+            <h6 className={styles["sub-heading"]}>
               Fill in the below details to continue
             </h6>
           </div>
           <div className={styles.navigationTabs__wrapper}>
             <div
               className={`${styles.navigationTab} ${
-                formType !== "FORM_ONE" ? styles.form__completed : styles.current__form
+                formType !== "FORM_ONE"
+                  ? styles.form__completed
+                  : styles.current__form
               }`}
             >
               <div className={styles.tabHeading}>hall details</div>
               <div className={styles.wrapper}>
-                <div className={styles['sub-wrapper']}>
+                <div className={styles["sub-wrapper"]}>
                   <PersonIcon className={styles.icon} />
                   <p className={styles.stepCount}>step 1</p>
                 </div>
@@ -562,12 +589,14 @@ const BookingDetailsDialogComponent = ({
             <div
               className={`${styles.navigationTab} ${
                 formType !== "FORM_ONE" &&
-                (formType === "FORM_TWO" ? styles.current__form : styles.form__completed)
+                (formType === "FORM_TWO"
+                  ? styles.current__form
+                  : styles.form__completed)
               }`}
             >
               <div className={styles.tabHeading}>preferences</div>
               <div className={styles.wrapper}>
-                <div className={styles['sub-wrapper']}>
+                <div className={styles["sub-wrapper"]}>
                   <PersonIcon className={styles.icon} />
                   <p className={styles.stepCount}>step 2</p>
                 </div>
@@ -587,7 +616,7 @@ const BookingDetailsDialogComponent = ({
             >
               <div className={styles.tabHeading}>user details</div>
               <div className={styles.wrapper}>
-                <div className={styles['sub-wrapper']}>
+                <div className={styles["sub-wrapper"]}>
                   <PersonIcon className={styles.icon} />
                   <p className={styles.stepCount}>step 3</p>
                 </div>
@@ -603,7 +632,7 @@ const BookingDetailsDialogComponent = ({
             >
               <div className={styles.tabHeading}>date & time</div>
               <div className={styles.wrapper}>
-                <div className={styles['sub-wrapper']}>
+                <div className={styles["sub-wrapper"]}>
                   <PersonIcon className={styles.icon} />
                   <p className={styles.stepCount}>step 4</p>
                 </div>
@@ -613,10 +642,14 @@ const BookingDetailsDialogComponent = ({
           </div>
           <div className={styles.form__wrapper}>
             {formType === "FORM_ONE" && (
-              <div className={`${styles.container} ${styles.hallDetails__container}`}>
+              <div
+                className={`${styles.container} ${styles.hallDetails__container}`}
+              >
                 <div className={styles.inputField__wrapper}>
                   <div className={styles.title}>hall name</div>
-                  <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                  <div
+                    className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                  >
                     <BusinessIcon className={styles.icon} />
                     <div className={styles.divider}></div>
                     <input
@@ -631,7 +664,9 @@ const BookingDetailsDialogComponent = ({
                 <div className={styles.inputFields__wrapper}>
                   <div className={styles.wrapper}>
                     <div className={styles.title}>location</div>
-                    <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                    <div
+                      className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                    >
                       <PlaceIcon className={styles.icon} />
                       <div className={styles.divider}></div>
                       <input
@@ -645,7 +680,9 @@ const BookingDetailsDialogComponent = ({
                   </div>
                   <div className={styles.wrapper}>
                     <div className={styles.title}>landmark</div>
-                    <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                    <div
+                      className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                    >
                       <FaLandmark className={styles.icon} />
                       <div className={styles.divider}></div>
                       <input
@@ -661,7 +698,9 @@ const BookingDetailsDialogComponent = ({
                 <div className={styles.inputFields__wrapper}>
                   <div className={styles.wrapper}>
                     <div className={styles.title}>seating capacity</div>
-                    <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                    <div
+                      className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                    >
                       <EventSeatIcon className={styles.icon} />
                       <div className={styles.divider}></div>
                       <input
@@ -675,7 +714,9 @@ const BookingDetailsDialogComponent = ({
                   </div>
                   <div className={styles.wrapper}>
                     <div className={styles.title}>No. of Rooms</div>
-                    <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                    <div
+                      className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                    >
                       <BedIcon className={styles.icon} />
                       <div className={styles.divider}></div>
                       <input
@@ -691,7 +732,9 @@ const BookingDetailsDialogComponent = ({
                 <div className={styles.inputFields__wrapper}>
                   <div className={styles.wrapper}>
                     <div className={styles.title}>veg food rate</div>
-                    <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                    <div
+                      className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                    >
                       <RestaurantIcon className={styles.icon} />
                       <div className={styles.divider}></div>
                       <input
@@ -705,7 +748,9 @@ const BookingDetailsDialogComponent = ({
                   </div>
                   <div className={styles.wrapper}>
                     <div className={styles.title}>Non-Veg food rate</div>
-                    <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                    <div
+                      className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                    >
                       <RestaurantIcon className={styles.icon} />
                       <div className={styles.divider}></div>
                       <input
@@ -718,9 +763,13 @@ const BookingDetailsDialogComponent = ({
                     </div>
                   </div>
                 </div>
-                <div className={`${styles.inputField__wrapper} ${styles['half-width']}`}>
+                <div
+                  className={`${styles.inputField__wrapper} ${styles["half-width"]}`}
+                >
                   <div className={styles.title}>Parking Availability</div>
-                  <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                  <div
+                    className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                  >
                     <LocalParkingIcon className={styles.icon} />
                     <div className={styles.divider}></div>
                     <input
@@ -737,7 +786,9 @@ const BookingDetailsDialogComponent = ({
               </div>
             )}
             {formType === "FORM_TWO" && (
-              <div className={`${styles.container} ${styles.preferences__container}`}>
+              <div
+                className={`${styles.container} ${styles.preferences__container}`}
+              >
                 <div className={styles.inputFields__wrapper}>
                   <div className={styles.wrapper}>
                     <div className={styles.title}>
@@ -1008,7 +1059,9 @@ const BookingDetailsDialogComponent = ({
                   <>
                     <div className={styles.inputFields__wrapper}>
                       <div className={styles.wrapper}>
-                        <div className={styles.title}>Expected Veg Rate/plate</div>
+                        <div className={styles.title}>
+                          Expected Veg Rate/plate
+                        </div>
                         <div className={styles.input__wrapper}>
                           <CurrencyRupeeIcon className={styles.icon} />
                           <div className={styles.divider}></div>
@@ -1028,7 +1081,9 @@ const BookingDetailsDialogComponent = ({
                         </div>
                       </div>
                       <div className={styles.wrapper}>
-                        <div className={styles.title}>Expected Non-Veg Rate/plate</div>
+                        <div className={styles.title}>
+                          Expected Non-Veg Rate/plate
+                        </div>
                         <div className={styles.input__wrapper}>
                           <CurrencyRupeeIcon className={styles.icon} />
                           <div className={styles.divider}></div>
@@ -1069,7 +1124,9 @@ const BookingDetailsDialogComponent = ({
                         </div>
                       </div>
                       <div className={styles.wrapper}>
-                        <div className={styles.title}>Non-Veg Menu Required</div>
+                        <div className={styles.title}>
+                          Non-Veg Menu Required
+                        </div>
                         <div className={styles.input__wrapper}>
                           <RestaurantMenuIcon className={styles.icon} />
                           <div className={styles.textAreaDivider}></div>
@@ -1093,11 +1150,15 @@ const BookingDetailsDialogComponent = ({
               </div>
             )}
             {formType == "FORM_THREE" && (
-              <div className={`${styles.container} ${styles.userDetails__container}`}>
+              <div
+                className={`${styles.container} ${styles.userDetails__container}`}
+              >
                 <div className={styles.inputFields__wrapper}>
                   <div className={styles.wrapper}>
                     <div className={styles.title}>First Name</div>
-                    <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                    <div
+                      className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                    >
                       <PersonIcon className={styles.icon} />
                       <div className={styles.divider}></div>
                       <input
@@ -1119,7 +1180,9 @@ const BookingDetailsDialogComponent = ({
                   </div>
                   <div className={styles.wrapper}>
                     <div className={styles.title}>Last Name</div>
-                    <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                    <div
+                      className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                    >
                       <PersonIcon className={styles.icon} />
                       <div className={styles.divider}></div>
                       <input
@@ -1142,7 +1205,9 @@ const BookingDetailsDialogComponent = ({
                 </div>
                 <div className={styles.inputField__wrapper}>
                   <div className={styles.title}>Office Contact</div>
-                  <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                  <div
+                    className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                  >
                     <BusinessIcon className={styles.icon} />
                     <div className={styles.divider}></div>
                     <input
@@ -1158,7 +1223,9 @@ const BookingDetailsDialogComponent = ({
                 </div>
                 <div className={styles.inputField__wrapper}>
                   <div className={styles.title}>Personal Contact</div>
-                  <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                  <div
+                    className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                  >
                     <BusinessIcon className={styles.icon} />
                     <div className={styles.divider}></div>
                     <input
@@ -1174,7 +1241,9 @@ const BookingDetailsDialogComponent = ({
                 </div>
                 <div className={styles.inputField__wrapper}>
                   <div className={styles.title}>Email Id</div>
-                  <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                  <div
+                    className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                  >
                     <EmailIcon className={styles.icon} />
                     <div className={styles.divider}></div>
                     <input
@@ -1214,7 +1283,9 @@ const BookingDetailsDialogComponent = ({
               >
                 <div className={styles.inputField__wrapper}>
                   <div className={styles.title}>Booking Start Date</div>
-                  <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                  <div
+                    className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                  >
                     <CalendarMonthIcon className={styles.icon} />
                     <div className={styles.divider}></div>
                     <input
@@ -1229,7 +1300,9 @@ const BookingDetailsDialogComponent = ({
                 </div>
                 <div className={styles.inputField__wrapper}>
                   <div className={styles.title}>Start Time</div>
-                  <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                  <div
+                    className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                  >
                     <AccessAlarmIcon className={styles.icon} />
                     <div className={styles.divider}></div>
                     <input
@@ -1248,7 +1321,9 @@ const BookingDetailsDialogComponent = ({
                 </div>
                 <div className={styles.inputField__wrapper}>
                   <div className={styles.title}>Booking End Date</div>
-                  <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                  <div
+                    className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                  >
                     <CalendarMonthIcon className={styles.icon} />
                     <div className={styles.divider}></div>
                     <input
@@ -1263,7 +1338,9 @@ const BookingDetailsDialogComponent = ({
                 </div>
                 <div className={styles.inputField__wrapper}>
                   <div className={styles.title}>End Time</div>
-                  <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                  <div
+                    className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                  >
                     <AccessAlarmIcon className={styles.icon} />
                     <div className={styles.divider}></div>
                     <input
@@ -1282,7 +1359,9 @@ const BookingDetailsDialogComponent = ({
                 </div>
                 <div className={styles.inputField__wrapper}>
                   <div className={styles.title}>Total Duration</div>
-                  <div className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}>
+                  <div
+                    className={`${styles.input__wrapper} ${styles.disabledInput__wrapper}`}
+                  >
                     <GiSandsOfTime className={styles.icon} />
                     <div className={styles.divider}></div>
                     <input
@@ -1326,10 +1405,16 @@ const BookingDetailsDialogComponent = ({
               </div>
               <div className={styles.btns__wrapper}>
                 <div className={styles.caption}>* Mandatory Fields</div>
-                <button className={`${styles.btn} ${styles.prevBtn}`} onClick={handlePrevBtnClick}>
+                <button
+                  className={`${styles.btn} ${styles.prevBtn}`}
+                  onClick={handlePrevBtnClick}
+                >
                   prev
                 </button>
-                <button className={`${styles.btn} ${styles.nextBtn}`} onClick={handleNextBtnClick}>
+                <button
+                  className={`${styles.btn} ${styles.nextBtn}`}
+                  onClick={handleNextBtnClick}
+                >
                   Next
                 </button>
               </div>

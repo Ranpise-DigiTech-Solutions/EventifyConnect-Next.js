@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 // Define types for fields in your Mongoose schema
 interface BookingMaster extends Document {
-    documentId: string;
+    documentId: any;
     hallId: mongoose.Types.ObjectId;
     hallCity: string;
     hallUserId: mongoose.Types.ObjectId;
@@ -34,7 +34,7 @@ interface BookingMaster extends Document {
 
 // Define your schema
 const bookingMasterSchema = new Schema<BookingMaster>({
-    documentId: { type: String, default: uuidv4, unique: true }, 
+    documentId: { type: Number, default: uuidv4, unique: true }, 
     hallId: { type: mongoose.Schema.Types.ObjectId, ref: 'hallmasters'},
     hallCity: { type: String, required: true },
     hallUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'serviceprovidermasters'},

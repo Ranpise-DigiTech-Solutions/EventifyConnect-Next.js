@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { bookingMaster } from "@/app/api/schemas";
 import { ObjectId } from "mongodb";
+import axios from "axios";
 
 import connectDB from "@/lib/db/mongodb";
 
@@ -12,6 +13,7 @@ function isObjectIdFormat(str: string) {
 export async function GET(req: NextRequest) {
   await connectDB(); // check database connection
   try {
+    const captchaToken = req.headers.get("X-Captcha-Token");
     const { searchParams } = new URL(req.url);
     const hallId = searchParams.get("hallId");
     const startDateOfMonth = searchParams.get("startDateOfMonth");
@@ -22,6 +24,39 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get("page") || "0");
     const limit = parseInt(searchParams.get("limit") || "0");
     const skip = page * limit;
+
+    if (!captchaToken) {
+      return new Response(
+        JSON.stringify({ message: "Missing captcha token!" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // check weather the user is valid
+    const reCaptchaResponse = await axios({
+      method: "POST",
+      url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
+      data: {
+        token: captchaToken,
+      },
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (reCaptchaResponse.data.success === false) {
+      return new Response(
+        JSON.stringify({ message: "Invalid reCAPTCHA response" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     // Validate customerId
     if (!hallId || !isObjectIdFormat(hallId)) {
@@ -76,6 +111,14 @@ export async function GET(req: NextRequest) {
       },
       {
         $lookup: {
+          from: "hallmasters",
+          localField: "hallId",
+          foreignField: "_id",
+          as: "hallMaster",
+        },
+      },
+      {
+        $lookup: {
           from: "eventtypes",
           localField: "eventId",
           foreignField: "_id",
@@ -90,6 +133,12 @@ export async function GET(req: NextRequest) {
       },
       {
         $unwind: {
+          path: "$hallMaster",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $unwind: {
           path: "$eventType",
           preserveNullAndEmptyArrays: true,
         },
@@ -98,6 +147,8 @@ export async function GET(req: NextRequest) {
         $addFields: {
           customerName: "$customerMaster.customerName",
           eventName: "$eventType.eventName",
+          customerEmail: "$customerMaster.customerEmail",
+          hallMainEmail: "$hallMaster.hallMainEmail",
           bookingId: "$_id",
         },
       },
@@ -187,6 +238,14 @@ export async function GET(req: NextRequest) {
             },
             {
               $lookup: {
+                from: "hallmasters",
+                localField: "hallId",
+                foreignField: "_id",
+                as: "hallMaster",
+              },
+            },
+            {
+              $lookup: {
                 from: "eventtypes",
                 localField: "eventId",
                 foreignField: "_id",
@@ -196,6 +255,12 @@ export async function GET(req: NextRequest) {
             {
               $unwind: {
                 path: "$customerMaster",
+                preserveNullAndEmptyArrays: true,
+              },
+            },
+            {
+              $unwind: {
+                path: "$hallMaster",
                 preserveNullAndEmptyArrays: true,
               },
             },
@@ -211,6 +276,8 @@ export async function GET(req: NextRequest) {
                   "$customerName" === null
                     ? "$customerMaster.customerName"
                     : "$customerName",
+                customerEmail: "$customerMaster.customerEmail",
+                hallMainEmail: "$hallMaster.hallMainEmail",
                 eventName: "$eventType.eventName",
               },
             },
@@ -287,6 +354,8 @@ export async function GET(req: NextRequest) {
                 bookingDuration: 1,
                 bookingStatus: 1,
                 customerName: 1,
+                customerEmail: 1,
+                hallMainEmail: 1,
                 customerType: 1,
                 eventName: 1,
               },

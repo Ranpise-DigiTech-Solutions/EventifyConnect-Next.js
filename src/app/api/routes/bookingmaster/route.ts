@@ -4,16 +4,50 @@ import { bookingMaster } from "@/app/api/schemas";
 import mongoose from "mongoose";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { firestore } from "@/lib/db/firebase";
+import axios from "axios";
 
 export async function GET(req: NextRequest) {
   const filter = {};
-
+  const captchaToken = req.headers.get("X-Captcha-Token");
   try {
     await connectDB(); // check database connection
 
+    if (!captchaToken) {
+      return new Response(
+        JSON.stringify({ message: "Missing captcha token!" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // check weather the user is valid
+    const reCaptchaResponse = await axios({
+      method: "POST",
+      url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
+      data: {
+        token: captchaToken,
+      },
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (reCaptchaResponse.data.success === false) {
+      return new Response(
+        JSON.stringify({ message: "Invalid reCAPTCHA response" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
     const bookings = await bookingMaster.find(filter);
 
-    if(!bookings) {
+    if (!bookings) {
       return new Response(JSON.stringify({ message: "No bookings found!" }), {
         status: 404,
         headers: { "Content-Type": "application/json" },
@@ -36,6 +70,40 @@ export async function POST(req: NextRequest) {
   await connectDB(); // check database connection
   try {
     const postBody: any = await req.json();
+    const captchaToken = req.headers.get("X-Captcha-Token");
+
+    if (!captchaToken) {
+      return new Response(
+        JSON.stringify({ message: "Missing captcha token!" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // check weather the user is valid
+    const reCaptchaResponse = await axios({
+      method: "POST",
+      url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
+      data: {
+        token: captchaToken,
+      },
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (reCaptchaResponse.data.success === false) {
+      return new Response(
+        JSON.stringify({ message: "Invalid reCAPTCHA response" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     if (!postBody) {
       return new Response(
@@ -77,8 +145,6 @@ export async function POST(req: NextRequest) {
     const prevId = data.currentId;
     const newId = prevId + 1;
 
-    console.log("New Booking Id: " + newId);
-
     const updatedData = {
       documentId: parseInt(newId),
       ...postBody,
@@ -90,8 +156,8 @@ export async function POST(req: NextRequest) {
     };
 
     const newDocument = new bookingMaster(updatedData);
-
-    if (!newDocument) {
+    const savedDocument = await newDocument.save();
+    if (!savedDocument) {
       return new Response(
         JSON.stringify({
           message: "Operation not found!",
@@ -102,8 +168,6 @@ export async function POST(req: NextRequest) {
         }
       );
     }
-
-    const savedDocument = await newDocument.save();
 
     await updateDoc(docRef, { currentId: newId });
 

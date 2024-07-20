@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from "@/lib/hooks/use-redux-store";
 import { onAuthStateChanged } from "firebase/auth";
 import axios from "axios";
-
+import { useRouter } from 'next/navigation';
 
 import useMediaQuery from "@mui/material/useMediaQuery";
 import AppBar from "@mui/material/AppBar";
@@ -39,16 +39,19 @@ import Link from 'next/link';
 import { useSearchParams } from "next/navigation";
 import Image from 'next/image';
 import styles from './page.module.scss';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
-type Props = {
-  window: Window;
+interface Props {
+  // window?: () => Window;
 }
 
-const UserProfilePage = ({ window }: Props) => {
+const UserProfilePage = (props: Props) => {
   const drawerWidth = 240;
+  const router = useRouter();
   const isBelow900px = useMediaQuery("(max-width:900px)");
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [isClosing, setIsClosing] = React.useState(false);
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const dispatch = useAppDispatch();
   const userInfoStore = useAppSelector((state) => state.userInfo);
@@ -81,10 +84,11 @@ const UserProfilePage = ({ window }: Props) => {
 
   const handleUserLogout = async () => {
     try {
+      router.push('/');
       await firebaseAuth.signOut(); // Sign out the current user
       dispatch(setUserInfoData({key: "userDetails", value:{}}));
       setUser(null);
-      console.log("User logged out successfully");
+      
     } catch (error: any) {
       // Handle Error condition
       console.error("Error logging out:", error.message);
@@ -92,19 +96,31 @@ const UserProfilePage = ({ window }: Props) => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(firebaseAuth, (currentUser) => {
-      console.log("ENTERED_SIGNIN", currentUser);
+    
+ if (!executeRecaptcha) {
+  return;
+}
+
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (currentUser) => {
+      
       if (currentUser) {
-        console.log("currentUser", currentUser.uid);
+        
         setUser(currentUser);
         // setIsLoading(true);
-
+        
         const getUserData = async () => {
+          const captchaToken = await executeRecaptcha('inquirySubmit');
           try {
             const response = await axios.get(
               `/api/routes/userAuthentication/${
                 currentUser.uid
-              }`
+              }`, {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-Captcha-Token': captchaToken,
+                },
+                withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+              }
             );
             dispatch(setUserInfoData({key:"userDetails",value: response.data}));
           } catch (error: any) {
@@ -113,7 +129,7 @@ const UserProfilePage = ({ window }: Props) => {
             // setIsLoading(false);
           }
         };
-        console.log("FUNCTION CALL");
+        
         getUserData();
       } else {
         // No user is signed in
@@ -123,6 +139,7 @@ const UserProfilePage = ({ window }: Props) => {
 
     return () => unsubscribe();
   }, [
+    executeRecaptcha,
     dispatch,
     userInfoStore.userAuthStateChangeFlag,
     userInfoStore.userDataUpdateFlag,
@@ -130,25 +147,41 @@ const UserProfilePage = ({ window }: Props) => {
 
   // get hall data
   useEffect(() => {
-    if (userInfoStore.userDetails.vendorType !== "Banquet Hall") {
+    if (userInfoStore.userDetails.vendorType !== "Banquet Hall" || !executeRecaptcha) {
       return;
     }
 
     try {
       const getServiceProviderData = async (hallData: { hallUserId: string }) => {
+        const captchaToken = await executeRecaptcha('inquirySubmit');
+
         const response = await axios.get(
           `/api/routes/serviceProviderMaster/?serviceProviderId=${
             hallData.hallUserId
-          }`
+          }`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Captcha-Token': captchaToken,
+            },
+            withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+          }
         );
         setServiceProviderData(response.data[0]);
       };
 
       const getHallData = async () => {
+        const captchaToken = await executeRecaptcha('inquirySubmit');
+
         const response = await axios.get(
           `/api/routes/hallMaster/getHallByUserId/?userId=${
             userInfoStore.userDetails.Document._id
-          }`
+          }`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Captcha-Token': captchaToken,
+            },
+            withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+          }
         );
         setHallData(response.data[0]);
         getServiceProviderData(response.data[0]);
@@ -162,7 +195,7 @@ const UserProfilePage = ({ window }: Props) => {
       console.error(error);
       setIsLoading(false);
     }
-  }, [user, userInfoStore.userDetails]);
+  }, [user, userInfoStore.userDetails, executeRecaptcha]);
 
   const drawer = (
     <Box
@@ -391,7 +424,7 @@ const UserProfilePage = ({ window }: Props) => {
   };
 
   // Remove this const when copying and pasting into your project.
-  const container = typeof window !== 'undefined' ? window.document.body : undefined;
+  // const container = window !== undefined ? () => window().document.body : undefined;
 
 
   return (
@@ -435,7 +468,7 @@ const UserProfilePage = ({ window }: Props) => {
               aria-label="mailbox folders"
             >
               <Drawer
-                container={container}
+                // container={container}
                 variant="temporary"
                 open={mobileOpen}
                 onTransitionEnd={handleDrawerTransitionEnd}

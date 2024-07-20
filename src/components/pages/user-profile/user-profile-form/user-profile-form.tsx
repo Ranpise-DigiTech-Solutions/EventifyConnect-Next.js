@@ -33,6 +33,7 @@ import { fetchCitiesOfState, fetchStates } from "@/redux/thunks/data";
 import { toggleUserDataUpdateFlag } from "@/redux/slices/user-info";
 import styles from "./user-profile-form.module.scss";
 import { RootState } from "@/redux/store";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 
 type Props = {};
 
@@ -184,6 +185,7 @@ const customSelectStyles = {
 };
 
 const UserProfileForm = (props: Props) => {
+  const { executeRecaptcha } = useGoogleReCaptcha();
   const profilePicInputRef = useRef<HTMLInputElement | null>(null); // btn used to trigger the hidden input that allows the selection of profile pic image
   const dispatch = useAppDispatch();
   const data = useAppSelector((state: RootState) => state.dataInfo); // COUNTRIES, STATES & CITIES
@@ -320,20 +322,16 @@ const UserProfileForm = (props: Props) => {
       if (userType === "CUSTOMER") {
         dispatch(
           fetchCitiesOfState({
-            countryName:
-            customerData.customerCountry,
-            stateName:
-            customerData.customerState
-      })
+            countryName: customerData.customerCountry,
+            stateName: customerData.customerState,
+          })
         );
       } else {
         dispatch(
           fetchCitiesOfState({
-            countryName:
-            serviceProviderData.vendorCountry,
-            stateName:
-            serviceProviderData.vendorState
-                }          )
+            countryName: serviceProviderData.vendorCountry,
+            stateName: serviceProviderData.vendorState,
+          })
         );
       }
     } catch (error: any) {
@@ -346,6 +344,10 @@ const UserProfileForm = (props: Props) => {
 
   // call uploadFiles() method whenever user uploads a new profle pic
   useEffect(() => {
+    if (!executeRecaptcha) {
+      return;
+    }
+
     if (
       (userType === "CUSTOMER" &&
         (typeof customerData.customerProfileImage === "string" ||
@@ -358,14 +360,20 @@ const UserProfileForm = (props: Props) => {
     }
     uploadFiles();
   }, [
+    executeRecaptcha,
     customerData.customerProfileImage,
     serviceProviderData.vendorProfileImage,
   ]);
 
   // code to upload files to firebase
   const uploadFiles = async () => {
+    if (!executeRecaptcha) {
+      return;
+    }
+
     setIsLoading(true);
     try {
+      const captchaToken = await executeRecaptcha("inquirySubmit");
       if (userType === "VENDOR") {
         const vendorProfileImageRef = ref(
           firebaseStorage,
@@ -386,6 +394,13 @@ const UserProfileForm = (props: Props) => {
           `/api/routes/serviceProviderMaster/${serviceProviderData._id}`,
           {
             vendorProfileImage: vendorProfileImageUrl,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Captcha-Token": captchaToken,
+            },
+            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
         );
       } else if (userType === "CUSTOMER") {
@@ -402,11 +417,16 @@ const UserProfileForm = (props: Props) => {
 
         //update the file in mongodb
         await axios.patch(
-          `/api/routes/customerMaster/${
-            customerData._id
-          }`,
+          `/api/routes/customerMaster/${customerData._id}`,
           {
             customerProfileImage: customerProfileImageUrl,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Captcha-Token": captchaToken,
+            },
+            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
         );
       }
@@ -418,23 +438,34 @@ const UserProfileForm = (props: Props) => {
     }
   };
 
-  const handleSavePersonalInfo = async (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleSavePersonalInfo = async (
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
     e.preventDefault();
+    if (!executeRecaptcha) {
+      return;
+    }
     try {
+      const captchaToken = await executeRecaptcha("inquirySubmit");
       if (userType === "CUSTOMER") {
         const response = await axios.patch(
-          `/api/routes/customerMaster/${
-            customerData._id
-          }`,
+          `/api/routes/customerMaster/${customerData._id}`,
           {
             customerName:
               customerData.customerFirstName +
               " " +
               customerData.customerLastName,
             customerGender: customerData.customerGender,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Captcha-Token": captchaToken,
+            },
+            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
         );
-        console.log("CUSTOMER PERSONAL INFO UPDATE ", response.data);
+        
       } else if (userType === "VENDOR") {
         const response = await axios.patch(
           `/api/routes/serviceProviderMaster/${serviceProviderData._id}`,
@@ -444,9 +475,16 @@ const UserProfileForm = (props: Props) => {
               " " +
               serviceProviderData.vendorLastName,
             vendorGender: serviceProviderData.vendorGender,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Captcha-Token": captchaToken,
+            },
+            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
         );
-        console.log("VENDOR PERSONAL INFO UPDATE ", response.data);
+        
       }
       dispatch(toggleUserDataUpdateFlag());
       setIsDataUpdated(true);
@@ -457,22 +495,33 @@ const UserProfileForm = (props: Props) => {
     }
   };
 
-  const handleSaveContactInfo = async (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleSaveContactInfo = async (
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
     e.preventDefault();
+    if (!executeRecaptcha) {
+      return;
+    }
     try {
+      const captchaToken = await executeRecaptcha("inquirySubmit");
       if (userType === "CUSTOMER") {
         const response = await axios.patch(
-          `/api/routes/customerMaster/${
-            customerData._id
-          }`,
+          `/api/routes/customerMaster/${customerData._id}`,
           {
             customerMainMobileNo: customerData.customerMainMobileNo,
             customerMainEmail: customerData.customerMainEmail,
             customerAlternateMobileNo: customerData.customerAlternateMobileNo,
             customerAlternateEmail: customerData.customerAlternateEmail,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Captcha-Token": captchaToken,
+            },
+            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
         );
-        console.log("CUSTOMER PERSONAL INFO UPDATE ", response.data);
+        
       } else if (userType === "VENDOR") {
         const response = await axios.patch(
           `/api/routes/serviceProviderMaster/${serviceProviderData._id}`,
@@ -482,9 +531,16 @@ const UserProfileForm = (props: Props) => {
             vendorAlternateMobileNo:
               serviceProviderData.vendorAlternateMobileNo,
             vendorAlternateEmail: serviceProviderData.vendorAlternateEmail,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Captcha-Token": captchaToken,
+            },
+            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
         );
-        console.log("VENDOR PERSONAL INFO UPDATE ", response.data);
+        
       }
       dispatch(toggleUserDataUpdateFlag());
       setIsDataUpdated(true);
@@ -495,14 +551,18 @@ const UserProfileForm = (props: Props) => {
     }
   };
 
-  const handleSaveAddressInfo = async (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleSaveAddressInfo = async (
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
     e.preventDefault();
+    if (!executeRecaptcha) {
+      return;
+    }
     try {
+      const captchaToken = await executeRecaptcha("inquirySubmit");
       if (userType === "CUSTOMER") {
         const response = await axios.patch(
-          `/api/routes/customerMaster/${
-            customerData._id
-          }`,
+          `/api/routes/customerMaster/${customerData._id}`,
           {
             customerAddress: customerData.customerAddress,
             customerLandmark: customerData.customerLandmark,
@@ -511,9 +571,16 @@ const UserProfileForm = (props: Props) => {
             customerCity: customerData.customerCity,
             customerTaluk: customerData.customerTaluk,
             customerPincode: customerData.customerPincode,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Captcha-Token": captchaToken,
+            },
+            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
         );
-        console.log("CUSTOMER PERSONAL INFO UPDATE ", response.data);
+        
       } else if (userType === "VENDOR") {
         const response = await axios.patch(
           `/api/routes/serviceProviderMaster/${serviceProviderData._id}`,
@@ -525,9 +592,16 @@ const UserProfileForm = (props: Props) => {
             vendorCity: serviceProviderData.vendorCity,
             vendorTaluk: serviceProviderData.vendorTaluk,
             vendorPincode: serviceProviderData.vendorPincode,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Captcha-Token": captchaToken,
+            },
+            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
         );
-        console.log("VENDOR PERSONAL INFO UPDATE ", response.data);
+        
       }
       dispatch(toggleUserDataUpdateFlag());
       setIsDataUpdated(true);
@@ -554,8 +628,8 @@ const UserProfileForm = (props: Props) => {
             <div className={styles.coverPage}>
               <EditOutlinedIcon className={styles.icon} />
             </div>
-            <div className={styles['image-upload-container']}>
-              <div className={styles['profile-image']}>
+            <div className={styles["image-upload-container"]}>
+              <div className={styles["profile-image"]}>
                 {!customerData.customerProfileImage ? (
                   <Avatar
                     size="large"
@@ -567,9 +641,9 @@ const UserProfileForm = (props: Props) => {
                     src={
                       typeof customerData.customerProfileImage === "string"
                         ? customerData.customerProfileImage
-                        : URL.createObjectURL(
+                        : customerData.customerProfileImage instanceof Blob || customerData.customerProfileImage instanceof File ? URL.createObjectURL(
                             customerData.customerProfileImage
-                          ) || ""
+                          ) || "": ""
                     }
                     alt=""
                     className={styles.img}
@@ -589,29 +663,32 @@ const UserProfileForm = (props: Props) => {
                   <span>Edit</span>
                 </div>
               </div>
-              <div className={styles['user-name']}>
+              <div className={styles["user-name"]}>
                 <strong>
                   {customerData.customerFirstName +
                     " " +
                     customerData.customerLastName}
                 </strong>
                 <br />
-                <small className={styles['user-type']}>( customer )</small>
+                <small className={styles["user-type"]}>( customer )</small>
               </div>
               <input
                 ref={profilePicInputRef}
                 type="file"
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    if (e.target.files && e.target.files.length > 0) {
-                        handleCustomerData("customerProfileImage", e.target.files[0]);
-                      }
+                  if (e.target.files && e.target.files.length > 0) {
+                    handleCustomerData(
+                      "customerProfileImage",
+                      e.target.files[0]
+                    );
+                  }
                 }}
                 className={styles.profilePicInput}
                 style={{ display: "none" }}
                 accept="image/*"
               />
             </div>
-            <div className={styles['personal-information']}>
+            <div className={styles["personal-information"]}>
               <button
                 className={styles.editText}
                 onClick={() =>
@@ -621,7 +698,7 @@ const UserProfileForm = (props: Props) => {
                 {personalInfoFormEnabled ? "Cancel" : "Edit Personal Info"}
               </button>
               <button
-              title="editTxt"
+                title="editTxt"
                 className={styles.editTextIcon}
                 onClick={() =>
                   setPersonalInfoFormEnabled(!personalInfoFormEnabled)
@@ -638,12 +715,12 @@ const UserProfileForm = (props: Props) => {
                   personalInfoFormEnabled && styles["input-enabled"]
                 }`}
               >
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="firstName">First Name:</label>
                     <div className={styles.wrapper}>
                       <PersonIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="text"
                         name="firstName"
@@ -660,11 +737,11 @@ const UserProfileForm = (props: Props) => {
                       />
                     </div>
                   </div>
-                  <div className={styles['input-group']}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="lastName">Last Name:</label>
                     <div className={styles.wrapper}>
                       <PersonIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="text"
                         name="lastName"
@@ -679,12 +756,14 @@ const UserProfileForm = (props: Props) => {
                     </div>
                   </div>
                 </div>
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="gender">Gender:</label>
-                    <div className={`${styles.wrapper} ${styles['selectInput-wrapper']}`}>
+                    <div
+                      className={`${styles.wrapper} ${styles["selectInput-wrapper"]}`}
+                    >
                       <PersonIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <Select
                         styles={customSelectStyles}
                         options={genderOptions.map((gender) => ({
@@ -727,7 +806,7 @@ const UserProfileForm = (props: Props) => {
                 {personalInfoFormEnabled && (
                   <button
                     type="submit"
-                    className={styles['save-button']}
+                    className={styles["save-button"]}
                     onClick={handleSavePersonalInfo}
                   >
                     Save
@@ -736,7 +815,7 @@ const UserProfileForm = (props: Props) => {
               </div>
             </div>
             <hr />
-            <div className={styles['contact-information']}>
+            <div className={styles["contact-information"]}>
               <button
                 className={styles.editText}
                 onClick={() =>
@@ -746,7 +825,7 @@ const UserProfileForm = (props: Props) => {
                 {contactInfoFormEnabled ? "Cancel" : "Edit Contact Info"}
               </button>
               <button
-              title="editTxt"
+                title="editTxt"
                 className={styles.editTextIcon}
                 onClick={() =>
                   setContactInfoFormEnabled(!contactInfoFormEnabled)
@@ -763,10 +842,12 @@ const UserProfileForm = (props: Props) => {
                   contactInfoFormEnabled && styles["input-enabled"]
                 }`}
               >
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="mobileNumber">Mobile Number:</label>
-                    <div className={`${styles.wrapper} ${styles['phoneInput-wrapper']}`}>
+                    <div
+                      className={`${styles.wrapper} ${styles["phoneInput-wrapper"]}`}
+                    >
                       <PhoneInput
                         country={"us"}
                         value={customerData.customerMainMobileNo}
@@ -783,18 +864,19 @@ const UserProfileForm = (props: Props) => {
                           required: true,
                           autoFocus: true,
                           placeholder: "Enter phone number",
+                          style: { width: "100%" },
                         }}
-                        inputClass="input"
-                        containerClass="phoneInput"
+                        inputClass={styles.input}
+                        containerClass={styles.phoneInput}
                         placeholder="+91"
                       />
                     </div>
                   </div>
-                  <div className={styles['input-group']}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="email">Email:</label>
                     <div className={styles.wrapper}>
                       <EmailIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="email"
                         name="email"
@@ -812,10 +894,12 @@ const UserProfileForm = (props: Props) => {
                     </div>
                   </div>
                 </div>
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="altMobileNumber">Alt Mobile Number:</label>
-                    <div className={`${styles.wrapper} ${styles['phoneInput-wrapper']}`}>
+                    <div
+                      className={`${styles.wrapper} ${styles["phoneInput-wrapper"]}`}
+                    >
                       <PhoneInput
                         country={"us"}
                         value={customerData.customerAlternateMobileNo}
@@ -832,18 +916,19 @@ const UserProfileForm = (props: Props) => {
                           required: true,
                           autoFocus: true,
                           placeholder: "Enter phone number",
+                          style: { width: "100%" },
                         }}
-                        inputClass="input"
-                        containerClass="phoneInput"
+                        inputClass={styles.input}
+                        containerClass={styles.phoneInput}
                         placeholder="+91"
                       />
                     </div>
                   </div>
-                  <div className={styles['input-group']}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="altEmail">Alt Email:</label>
                     <div className={styles.wrapper}>
                       <EmailIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="email"
                         name="altEmail"
@@ -864,7 +949,7 @@ const UserProfileForm = (props: Props) => {
                 {contactInfoFormEnabled && (
                   <button
                     type="submit"
-                    className={styles['save-button']}
+                    className={styles["save-button"]}
                     onClick={handleSaveContactInfo}
                   >
                     Save
@@ -873,7 +958,7 @@ const UserProfileForm = (props: Props) => {
               </div>
             </div>
             <hr />
-            <div className={styles['address-information']}>
+            <div className={styles["address-information"]}>
               <button
                 className={styles.editText}
                 onClick={() =>
@@ -883,7 +968,7 @@ const UserProfileForm = (props: Props) => {
                 {addressInfoFormEnabled ? "Cancel" : "Edit Address Info"}
               </button>
               <button
-              title="editTxt"
+                title="editTxt"
                 className={styles.editTextIcon}
                 onClick={() =>
                   setAddressInfoFormEnabled(!addressInfoFormEnabled)
@@ -900,12 +985,12 @@ const UserProfileForm = (props: Props) => {
                   addressInfoFormEnabled && styles["input-enabled"]
                 }`}
               >
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="address">Address:</label>
                     <div className={styles.wrapper}>
                       <HomeIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="text"
                         className={styles.input}
@@ -919,11 +1004,11 @@ const UserProfileForm = (props: Props) => {
                       />
                     </div>
                   </div>
-                  <div className={styles['input-group']}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="landmark">Landmark:</label>
                     <div className={styles.wrapper}>
                       <PlaceIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="text"
                         name="landmark"
@@ -938,12 +1023,14 @@ const UserProfileForm = (props: Props) => {
                     </div>
                   </div>
                 </div>
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="city">Country:</label>
-                    <div className={`${styles.wrapper} ${styles['selectInput-wrapper']}`}>
+                    <div
+                      className={`${styles.wrapper} ${styles["selectInput-wrapper"]}`}
+                    >
                       <PublicIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <Select
                         styles={customSelectStyles}
                         options={
@@ -986,11 +1073,13 @@ const UserProfileForm = (props: Props) => {
                       />
                     </div>
                   </div>
-                  <div className={styles['input-group']}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="taluk">State:</label>
-                    <div className={`${styles.wrapper} ${styles['selectInput-wrapper']}`}>
+                    <div
+                      className={`${styles.wrapper} ${styles["selectInput-wrapper"]}`}
+                    >
                       <LocationCityIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <Select
                         styles={customSelectStyles}
                         options={
@@ -1034,12 +1123,14 @@ const UserProfileForm = (props: Props) => {
                     </div>
                   </div>
                 </div>
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="state">City:</label>
-                    <div className={`${styles.wrapper} ${styles['selectInput-wrapper']}`}>
+                    <div
+                      className={`${styles.wrapper} ${styles["selectInput-wrapper"]}`}
+                    >
                       <LocationCityIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <Select
                         styles={customSelectStyles}
                         options={
@@ -1083,11 +1174,11 @@ const UserProfileForm = (props: Props) => {
                       />
                     </div>
                   </div>
-                  <div className={styles['input-group']}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="country">Taluk:</label>
                     <div className={styles.wrapper}>
                       <StreetviewIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="text"
                         name="taluk"
@@ -1103,12 +1194,12 @@ const UserProfileForm = (props: Props) => {
                     </div>
                   </div>
                 </div>
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="pincode">Pincode:</label>
                     <div className={styles.wrapper}>
                       <GpsFixedIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="text"
                         name="pincode"
@@ -1150,7 +1241,7 @@ const UserProfileForm = (props: Props) => {
                 {addressInfoFormEnabled && (
                   <button
                     type="submit"
-                    className={styles['save-button']}
+                    className={styles["save-button"]}
                     onClick={handleSaveAddressInfo}
                   >
                     Save
@@ -1164,15 +1255,15 @@ const UserProfileForm = (props: Props) => {
             <div className={styles.coverPage}>
               <EditOutlinedIcon className={styles.icon} />
             </div>
-            <div className={styles['image-upload-container']}>
-              <div className={styles['profile-image']}>
+            <div className={styles["image-upload-container"]}>
+              <div className={styles["profile-image"]}>
                 <img
                   src={
                     typeof serviceProviderData.vendorProfileImage === "string"
                       ? serviceProviderData.vendorProfileImage
-                      : URL.createObjectURL(
+                      : serviceProviderData.vendorProfileImage instanceof Blob || serviceProviderData.vendorProfileImage instanceof File ? URL.createObjectURL(
                           serviceProviderData.vendorProfileImage
-                        ) || ""
+                        ) || "" : ""
                   }
                   alt="Avatar"
                   className={styles.img}
@@ -1191,31 +1282,32 @@ const UserProfileForm = (props: Props) => {
                   <span>Edit</span>
                 </div>
               </div>
-              <div className={styles['user-name']}>
+              <div className={styles["user-name"]}>
                 <strong>
                   {serviceProviderData.vendorFirstName +
                     " " +
                     serviceProviderData.vendorLastName}
                 </strong>
                 <br />
-                <small className={styles['user-type']}>( vendor )</small>
+                <small className={styles["user-type"]}>( vendor )</small>
               </div>
               <input
                 ref={profilePicInputRef}
                 type="file"
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    if (e.target.files && e.target.files.length > 0) {
-                  handleServiceProviderData(
-                    "vendorProfileImage",
-                    e.target.files[0]
-                  );}
+                  if (e.target.files && e.target.files.length > 0) {
+                    handleServiceProviderData(
+                      "vendorProfileImage",
+                      e.target.files[0]
+                    );
+                  }
                 }}
                 className={styles.profilePicInput}
                 style={{ display: "none" }}
                 accept="image/*"
               />
             </div>
-            <div className={styles['personal-information']}>
+            <div className={styles["personal-information"]}>
               <button
                 className={styles.editText}
                 onClick={() =>
@@ -1225,7 +1317,7 @@ const UserProfileForm = (props: Props) => {
                 {personalInfoFormEnabled ? "Cancel" : "Edit Personal Info"}
               </button>
               <button
-              title="editTxt"
+                title="editTxt"
                 className={styles.editTextIcon}
                 onClick={() =>
                   setPersonalInfoFormEnabled(!personalInfoFormEnabled)
@@ -1242,12 +1334,12 @@ const UserProfileForm = (props: Props) => {
                   personalInfoFormEnabled && styles["input-enabled"]
                 }`}
               >
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="firstName">First Name:</label>
                     <div className={styles.wrapper}>
                       <PersonIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="text"
                         name="firstName"
@@ -1264,11 +1356,11 @@ const UserProfileForm = (props: Props) => {
                       />
                     </div>
                   </div>
-                  <div className={styles['input-group']}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="lastName">Last Name:</label>
                     <div className={styles.wrapper}>
                       <PersonIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="text"
                         name="lastName"
@@ -1286,12 +1378,14 @@ const UserProfileForm = (props: Props) => {
                     </div>
                   </div>
                 </div>
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="gender">Gender:</label>
-                    <div className={`${styles.wrapper} ${styles['selectInput-wrapper']}`}>
+                    <div
+                      className={`${styles.wrapper} ${styles["selectInput-wrapper"]}`}
+                    >
                       <PersonIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <Select
                         styles={customSelectStyles}
                         options={genderOptions.map((gender) => ({
@@ -1334,7 +1428,7 @@ const UserProfileForm = (props: Props) => {
                 {personalInfoFormEnabled && (
                   <button
                     type="submit"
-                    className={styles['save-button']}
+                    className={styles["save-button"]}
                     onClick={handleSavePersonalInfo}
                   >
                     Save
@@ -1343,7 +1437,7 @@ const UserProfileForm = (props: Props) => {
               </div>
             </div>
             <hr />
-            <div className={styles['contact-information']}>
+            <div className={styles["contact-information"]}>
               <button
                 className={styles.editText}
                 onClick={() =>
@@ -1353,7 +1447,7 @@ const UserProfileForm = (props: Props) => {
                 {contactInfoFormEnabled ? "Cancel" : "Edit Contact Info"}
               </button>
               <button
-              title="editTxt"
+                title="editTxt"
                 className={styles.editTextIcon}
                 onClick={() =>
                   setContactInfoFormEnabled(!contactInfoFormEnabled)
@@ -1370,10 +1464,12 @@ const UserProfileForm = (props: Props) => {
                   contactInfoFormEnabled && styles["input-enabled"]
                 }`}
               >
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="mobileNumber">Mobile Number:</label>
-                    <div className={`${styles.wrapper} ${styles['phoneInput-wrapper']}`}>
+                    <div
+                      className={`${styles.wrapper} ${styles["phoneInput-wrapper"]}`}
+                    >
                       <PhoneInput
                         country={"us"}
                         value={serviceProviderData.vendorContact}
@@ -1390,18 +1486,19 @@ const UserProfileForm = (props: Props) => {
                           required: true,
                           autoFocus: true,
                           placeholder: "Enter phone number",
+                          style: { width: "100%" },
                         }}
-                        inputClass="input"
-                        containerClass="phoneInput"
+                        inputClass={styles.input}
+                        containerClass={styles.phoneInput}
                         placeholder="+91"
                       />
                     </div>
                   </div>
-                  <div className={styles['input-group']}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="email">Email:</label>
                     <div className={styles.wrapper}>
                       <EmailIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="email"
                         name="email"
@@ -1419,10 +1516,12 @@ const UserProfileForm = (props: Props) => {
                     </div>
                   </div>
                 </div>
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="altMobileNumber">Alt Mobile Number:</label>
-                    <div className={`${styles.wrapper} ${styles['phoneInput-wrapper']}`}>
+                    <div
+                      className={`${styles.wrapper} ${styles["phoneInput-wrapper"]}`}
+                    >
                       <PhoneInput
                         country={"us"}
                         value={serviceProviderData.vendorAlternateMobileNo}
@@ -1439,18 +1538,19 @@ const UserProfileForm = (props: Props) => {
                           required: true,
                           autoFocus: true,
                           placeholder: "Enter phone number",
+                          style: { width: "100%" },
                         }}
-                        inputClass="input"
-                        containerClass="phoneInput"
+                        inputClass={styles.input}
+                        containerClass={styles.phoneInput}
                         placeholder="+91"
                       />
                     </div>
                   </div>
-                  <div className={styles['input-group']}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="altEmail">Alt Email:</label>
                     <div className={styles.wrapper}>
                       <EmailIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="email"
                         name="altEmail"
@@ -1471,7 +1571,7 @@ const UserProfileForm = (props: Props) => {
                 {contactInfoFormEnabled && (
                   <button
                     type="submit"
-                    className={styles['save-button']}
+                    className={styles["save-button"]}
                     onClick={handleSaveContactInfo}
                   >
                     Save
@@ -1480,7 +1580,7 @@ const UserProfileForm = (props: Props) => {
               </div>
             </div>
             <hr />
-            <div className={styles['address-information']}>
+            <div className={styles["address-information"]}>
               <button
                 className={styles.editText}
                 onClick={() =>
@@ -1490,7 +1590,7 @@ const UserProfileForm = (props: Props) => {
                 {addressInfoFormEnabled ? "Cancel" : "Edit Address Info"}
               </button>
               <button
-              title="editTxt"
+                title="editTxt"
                 className={styles.editTextIcon}
                 onClick={() =>
                   setAddressInfoFormEnabled(!addressInfoFormEnabled)
@@ -1507,12 +1607,12 @@ const UserProfileForm = (props: Props) => {
                   addressInfoFormEnabled && styles["input-enabled"]
                 }`}
               >
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="address">Address:</label>
                     <div className={styles.wrapper}>
                       <HomeIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="text"
                         className={styles.input}
@@ -1529,11 +1629,11 @@ const UserProfileForm = (props: Props) => {
                       />
                     </div>
                   </div>
-                  <div className={styles['input-group']}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="landmark">Landmark:</label>
                     <div className={styles.wrapper}>
                       <PlaceIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="text"
                         name="landmark"
@@ -1551,12 +1651,14 @@ const UserProfileForm = (props: Props) => {
                     </div>
                   </div>
                 </div>
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="city">Country:</label>
-                    <div className={`${styles.wrapper} ${styles['selectInput-wrapper']}`}>
+                    <div
+                      className={`${styles.wrapper} ${styles["selectInput-wrapper"]}`}
+                    >
                       <PublicIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <Select
                         styles={customSelectStyles}
                         options={
@@ -1599,11 +1701,13 @@ const UserProfileForm = (props: Props) => {
                       />
                     </div>
                   </div>
-                  <div className={styles['input-group']}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="taluk">State:</label>
-                    <div className={`${styles.wrapper} ${styles['selectInput-wrapper']}`}>
+                    <div
+                      className={`${styles.wrapper} ${styles["selectInput-wrapper"]}`}
+                    >
                       <LocationCityIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <Select
                         styles={customSelectStyles}
                         options={
@@ -1647,12 +1751,14 @@ const UserProfileForm = (props: Props) => {
                     </div>
                   </div>
                 </div>
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="state">City:</label>
-                    <div className={`${styles.wrapper} ${styles['selectInput-wrapper']}`}>
+                    <div
+                      className={`${styles.wrapper} ${styles["selectInput-wrapper"]}`}
+                    >
                       <LocationCityIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <Select
                         styles={customSelectStyles}
                         options={
@@ -1696,11 +1802,11 @@ const UserProfileForm = (props: Props) => {
                       />
                     </div>
                   </div>
-                  <div className={styles['input-group']}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="country">Taluk:</label>
                     <div className={styles.wrapper}>
                       <StreetviewIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="text"
                         name="taluk"
@@ -1719,12 +1825,12 @@ const UserProfileForm = (props: Props) => {
                     </div>
                   </div>
                 </div>
-                <div className={styles['input-row']}>
-                  <div className={styles['input-group']}>
+                <div className={styles["input-row"]}>
+                  <div className={styles["input-group"]}>
                     <label htmlFor="pincode">Pincode:</label>
                     <div className={styles.wrapper}>
                       <GpsFixedIcon className={styles.icon} />
-                      <div className={styles['vertical-divider']}></div>
+                      <div className={styles["vertical-divider"]}></div>
                       <input
                         type="text"
                         name="pincode"
@@ -1769,7 +1875,7 @@ const UserProfileForm = (props: Props) => {
                 {addressInfoFormEnabled && (
                   <button
                     type="submit"
-                    className={styles['save-button']}
+                    className={styles["save-button"]}
                     onClick={handleSaveAddressInfo}
                   >
                     Save

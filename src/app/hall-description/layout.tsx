@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, Suspense } from "react";
 import { useAppDispatch } from "@/lib/hooks/use-redux-store";
 
 import {
@@ -27,7 +27,11 @@ const HallDescriptionLayout = ({ children }: { children: React.ReactNode }) => {
     }
   }, [dispatch]);
 
-  return <main>{children}</main>;
+  return <main>
+    <Suspense fallback={<div>Loading...</div>}>
+    {children}
+</Suspense>
+    </main>;
 };
 
 export default HallDescriptionLayout;

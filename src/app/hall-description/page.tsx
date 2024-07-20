@@ -20,12 +20,14 @@ import {
 } from "@/components/pages/business-description";
 import { LoadingScreen } from "@/components/sub-components";
 import styles from "./page.module.scss";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 
 type Props = {};
 
 const HallDescriptionPage = (props: Props) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const { executeRecaptcha } = useGoogleReCaptcha();
+    const searchParams = useSearchParams();
   const hallId = searchParams.get("hallId");
 
   const [hallData, setHallData] = useState<any>({});
@@ -39,9 +41,21 @@ const HallDescriptionPage = (props: Props) => {
     if (!hallData.hallUserId) return;
 
     const getServiceProviderData = async (hallData: { hallUserId: string }) => {
+      if (!executeRecaptcha) {
+        return;
+      }
       try {
+        const captchaToken = await executeRecaptcha("inquirySubmit");
+
         const response = await axios.get(
-          `/api/routes/serviceProviderMaster/${hallData.hallUserId}`
+          `/api/routes/serviceProviderMaster/${hallData.hallUserId}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Captcha-Token": captchaToken,
+            },
+            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
+          }
         );
         setServiceProviderData(response.data);
       } catch (error) {
@@ -52,7 +66,7 @@ const HallDescriptionPage = (props: Props) => {
     };
 
     getServiceProviderData(hallData);
-  }, [hallData]);
+  }, [hallData, executeRecaptcha]);
 
   // Fetch hall data whenever hallId changes
   useEffect(() => {
@@ -60,8 +74,19 @@ const HallDescriptionPage = (props: Props) => {
     if (!hallId) return;
 
     const getHallData = async () => {
+      if (!executeRecaptcha) {
+        return;
+      }
       try {
-        const response = await axios.get(`/api/routes/hallMaster/${hallId}`);
+        const captchaToken = await executeRecaptcha('inquirySubmit');
+
+        const response = await axios.get(`/api/routes/hallMaster/${hallId}`, {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Captcha-Token": captchaToken,
+          },
+          withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
+        });
         setHallData(response.data[0]);
       } catch (error) {
         console.error(error);
@@ -71,7 +96,7 @@ const HallDescriptionPage = (props: Props) => {
     };
 
     getHallData();
-  }, [hallId]);
+  }, [hallId, executeRecaptcha]);
 
   const handleBookingDetailsDialogOpen = () => {
     setOpenBookingDetailsDialog(true);
@@ -86,15 +111,14 @@ const HallDescriptionPage = (props: Props) => {
   return (
     <div>
       <Navbar setIsLoading={setIsLoading} />
-      {
-        openBookingDetailsDialog && 
+      {openBookingDetailsDialog && (
         <BookingDetailsDialog
           open={openBookingDetailsDialog}
           handleClose={handleBookingDetailsDialogClose}
           hallData={hallData}
           serviceProviderData={serviceProviderData}
         />
-      }
+      )}
       <div className={styles.DescriptionPage__container}>
         <div className={styles.main__wrapper}>
           <div className={styles.sub__wrapper}>
