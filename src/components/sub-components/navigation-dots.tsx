@@ -10,7 +10,7 @@ const NavigationDots = ({ active, imageList, className }: Props) => {
     return (
         <div>
           <div className="app__navigation">
-            {imageList.map((item,index)=>(
+            {imageList && imageList.map((item,index)=>(
                 <div
                 key={"Image-" + index}
                 className={className}

@@ -1,7 +1,6 @@
 import type { NextRequest } from "next/server";
 import connectDB from "@/lib/db/mongodb";
 import { ObjectId } from "mongodb";
-import mongoose from "mongoose";
 import axios from "axios";
 import { hallMaster } from "@/app/api/schemas";
 

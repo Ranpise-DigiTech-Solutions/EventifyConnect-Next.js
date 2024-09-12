@@ -10,7 +10,6 @@ const useRecaptcha = () => {
 
     const getToken = async ()=> {
       if(!executeRecaptcha) {
-        console.log("Not available to execute rematch!")
         return null;
       } else {
         const token = await executeRecaptcha('inquirySubmit');

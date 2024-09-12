@@ -1,4 +1,4 @@
-"use client"
+"use client";
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
@@ -16,18 +16,61 @@ import styles from "./availability-calendar.module.scss";
 import { setBookingInfoData } from "@/redux/slices/booking-info";
 import { firebaseAuth } from "@/lib/db/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import { Calendar, Badge, Button, Modal } from "antd";
+import type { Dayjs } from "dayjs";
 
 type Props = {
   hallData: any;
 };
 
+interface timeSlotsType {
+  [key: number]: boolean;
+}
+
+interface AuspiciousDate {
+  date: string; // Format: 'YYYY-MM-DD'
+  time: string; // Auspicious time
+}
+
+interface calendarType {
+  [key: string]: {
+    date: string;
+    timeSlots: timeSlotsType;
+  };
+}
+
 const AvailabilityCalendarComponent = ({ hallData }: Props) => {
   const { executeRecaptcha } = useGoogleReCaptcha();
 
-  interface timeSlotsType {
-    [key: number]: boolean;
-  }
+  const auspiciousDates: AuspiciousDate[] = [
+    { date: "2024-09-20", time: "10:00 AM - 12:00 PM" },
+    { date: "2024-10-15", time: "2:00 PM - 4:00 PM" },
+    { date: "2024-11-11", time: "5:00 PM - 7:00 PM" },
+  ];
+
+  const dateCellRender = (value: Dayjs) => {
+    const dateString = value.format("YYYY-MM-DD");
+    const auspicious = auspiciousDates.find((d) => d.date === dateString);
+
+    if (auspicious) {
+      return (
+        <Tooltip
+          title={`Auspicious Time: ${auspicious.time}`}
+          placement="top"
+          enterDelay={1500}
+          leaveDelay={0}
+        >
+          <div>
+            <Badge color="green" />
+            <span style={{ marginLeft: 8 }}>Auspicious</span>
+          </div>
+        </Tooltip>
+      );
+    }
+
+    return null; // No render for non-auspicious dates
+  };
 
   const timeSlots = {
     8: false,
@@ -56,13 +99,6 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
     7: false,
   };
 
-  interface calendarType {
-    [key: string]: {
-      date: string;
-      timeSlots: timeSlotsType;
-    };
-  }
-
   const calendar = {
     Monday: { date: "", timeSlots: { ...timeSlots } },
     Tuesday: { date: "", timeSlots: { ...timeSlots } },
@@ -83,6 +119,12 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
   const dispatch = useAppDispatch();
   const bookingInfoStore = useAppSelector((state) => state.bookingInfo);
   const userInfoStore = useAppSelector((state) => state.userInfo);
+
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
+  // Modal open and close handlers
+  const showModal = () => setIsModalVisible(true);
+  const handleCancel = () => setIsModalVisible(false);
 
   const startOfWeek = (date: Date) => {
     const d = new Date(date);
@@ -149,18 +191,19 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
       return;
     }
     try {
-      const captchaToken = await executeRecaptcha('inquirySubmit');
+      const captchaToken = await executeRecaptcha("inquirySubmit");
       if (startDateOfWeek && endDateOfWeek) {
         const response = await axios.get(
-          `/api/routes/hallBookingMaster/getHallAvailability/?hallId=${hallData._id}&startDate=${startDateOfWeek}&endDate=${endDateOfWeek}`, {
+          `/api/routes/hallBookingMaster/getHallAvailability/?hallId=${hallData._id}&startDate=${startDateOfWeek}&endDate=${endDateOfWeek}`,
+          {
             headers: {
-              'Content-Type': 'application/json',
-              'X-Captcha-Token': captchaToken,
+              "Content-Type": "application/json",
+              "X-Captcha-Token": captchaToken,
             },
-            withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
         );
-        
+
         const bookings = response.data;
         if (bookings) {
           bookings.map(
@@ -173,22 +216,11 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
                 booking.bookingStartDateTimestamp
               );
               const bookingEndDate = new Date(booking.bookingEndDateTimestamp);
-              console.log(
-                "BOOKING START and END DATES ",
-                bookingStartDate.toString(),
-                bookingEndDate.toString()
-              );
-              console.log(
-                "WEEK START and END DATES ",
-                startDateOfWeek.toString(),
-                endDateOfWeek.toString()
-              );
 
               if (
                 bookingStartDate < startDateOfWeek &&
                 bookingEndDate > endDateOfWeek
               ) {
-                
                 // Case 1: Booking spans over the whole week
                 for (const day in tempCalendar) {
                   tempCalendar[day].timeSlots = Object.fromEntries(
@@ -202,7 +234,6 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
                 bookingStartDate >= startDateOfWeek &&
                 bookingEndDate > endDateOfWeek
               ) {
-                
                 // Case 2: Booking starts within the week but extends beyond it
                 const bookingStartDD = bookingStartDate.getDate();
                 const endOfWeekDD = endDateOfWeek.getDate();
@@ -230,7 +261,6 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
                 bookingStartDate < startDateOfWeek &&
                 bookingEndDate <= endDateOfWeek
               ) {
-                
                 // Case 3: Booking ends within the week but starts before it
                 const bookingEndDD = bookingEndDate.getDate();
                 const startOfWeekDD = startDateOfWeek.getDate();
@@ -262,11 +292,6 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
                 const endDD = bookingEndDate.getDate();
                 const startOfWeekDD = startDateOfWeek.getDate();
                 const endOfWeekDD = endDateOfWeek.getDate();
-
-                
-                
-                // 
-                
 
                 if (startDD === endDD) {
                   const bookingStartHour = bookingStartDate.getHours();
@@ -311,7 +336,6 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
             }
           );
         }
-        
       }
     } catch (error: any) {
       console.error(error.message);
@@ -410,18 +434,16 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
 
   useEffect(() => {
     if (startDate) {
-      
       setStartDateOfWeek(startOfWeek(startDate));
       setEndDateOfWeek(endOfWeek(startDate));
     }
   }, [startDate]);
 
   useEffect(() => {
-    if(!executeRecaptcha) {
+    if (!executeRecaptcha) {
       return;
     }
     if (startDateOfWeek && endDateOfWeek) {
-      
       setDates(startDateOfWeek, endDateOfWeek);
       getAvailability();
     }
@@ -475,7 +497,11 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
 
   // to calculate the booking duration of a booking
   useEffect(() => {
-    if (!bookingInfoStore.startTime || !bookingInfoStore.endTime || !executeRecaptcha) {
+    if (
+      !bookingInfoStore.startTime ||
+      !bookingInfoStore.endTime ||
+      !executeRecaptcha
+    ) {
       return;
     }
     try {
@@ -487,7 +513,6 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
       const endDate: Date = new Date(
         `${bookingInfoStore.bookingEndDate}T${bookingInfoStore.endTime}:00`
       );
-      
 
       const timeDifferenceMilliseconds: number =
         endDate.getTime() - startDate.getTime(); //;
@@ -496,10 +521,6 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
       );
       const timeDifferenceMinutes = Math.floor(
         (timeDifferenceMilliseconds % (1000 * 60 * 60)) / (1000 * 60)
-      );
-
-      console.log(
-        `Time difference: ${timeDifferenceHours} hours ${timeDifferenceMinutes} minutes`
       );
 
       // Format the time difference into a string representation
@@ -529,7 +550,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
         if (!executeRecaptcha) {
           return;
         }
-        const captchaToken = await executeRecaptcha('inquirySubmit');
+        const captchaToken = await executeRecaptcha("inquirySubmit");
         //clear any previous comments
         dispatch(setBookingInfoData({ key: "comments", value: "" }));
 
@@ -556,18 +577,18 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
         );
 
         const response = await axios.get(
-          `/api/routes/hallBookingMaster/getHallBookingsCount/?hallId=${hallData._id}&bookingStartDateTimestamp=${parsedStartDateObject}&bookingEndDateTimestamp=${parsedEndDateObject}`, {
+          `/api/routes/hallBookingMaster/getHallBookingsCount/?hallId=${hallData._id}&bookingStartDateTimestamp=${parsedStartDateObject}&bookingEndDateTimestamp=${parsedEndDateObject}`,
+          {
             headers: {
-              'Content-Type': 'application/json',
-              'X-Captcha-Token': captchaToken,
+              "Content-Type": "application/json",
+              "X-Captcha-Token": captchaToken,
             },
-            withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
         );
 
         const bookings = response.data;
-        
-        
+
         if (bookings.count !== 0) {
           dispatch(
             setBookingInfoData({
@@ -676,12 +697,30 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
   return (
     <div className={styles.availabilityCalendar__wrapper}>
       <h2 className={styles.heading}>Availability Calendar</h2>
+      <div style={{ width: "100%", padding: "20px" }}>
+        <h2>Choose an Auspicious Date</h2>
+
+        <Button type="primary" onClick={showModal}>
+          Show Calendar
+        </Button>
+
+        {/* Modal that contains the Calendar */}
+        <Modal
+          title="Auspicious Dates Calendar"
+          visible={isModalVisible}
+          onCancel={handleCancel}
+          footer={""}
+          width="80%" // Adjust modal width
+        >
+          <Calendar dateCellRender={dateCellRender} />
+        </Modal>
+      </div>
       <div className={styles.contents__wrapper}>
-        <div className={styles['seven-day-date-picker']}>
+        <div className={styles["seven-day-date-picker"]}>
           <div className={styles.arrow} onClick={handlePrevWeek}>
             <FaChevronLeft className={styles.icon} />
           </div>
-          <div className={styles['date-range']}>
+          <div className={styles["date-range"]}>
             <span>
               {startDateOfWeek
                 ? startDateOfWeek.getDate().toString().padStart(2, "0") +
@@ -691,7 +730,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
                   startDateOfWeek.getFullYear().toString()
                 : ""}
             </span>
-            <span className={styles['date-separator']}>-</span>
+            <span className={styles["date-separator"]}>-</span>
             <span>
               {endDateOfWeek
                 ? endDateOfWeek.getDate().toString().padStart(2, "0") +
@@ -710,11 +749,17 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
           {isUserLoggedIn ? (
             <div className={styles.calendar}>
               <div className={styles.days__wrapper}>
-                <div className={styles['sub-wrapper']}>
-                  <div className={styles['sub-title']} style={{ visibility: "hidden" }}>
+                <div className={styles["sub-wrapper"]}>
+                  <div
+                    className={styles["sub-title"]}
+                    style={{ visibility: "hidden" }}
+                  >
                     Hours
                   </div>
-                  <div className={styles.title} style={{ visibility: "hidden" }}>
+                  <div
+                    className={styles.title}
+                    style={{ visibility: "hidden" }}
+                  >
                     Hours
                   </div>
                 </div>
@@ -728,7 +773,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
                     return (
                       <div
                         key={day}
-                        className={`${styles['sub-wrapper']} ${
+                        className={`${styles["sub-wrapper"]} ${
                           (bookingInfoStore.bookingStartDate &&
                           bookingInfoStore.bookingEndDate
                             ? isDateInRange(
@@ -740,7 +785,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
                           styles.currentSelection
                         }`}
                       >
-                        <div className={styles['sub-title']}>
+                        <div className={styles["sub-title"]}>
                           {dayInfo.date.substring(0, 5)}
                         </div>
                         <div className={styles.title}>{day}</div>
@@ -752,7 +797,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
                 <div className={styles.timeSlots}>
                   <div className={styles.timeSlots__wrapper}>
                     {Object.keys(timeSlots).map((timeSlot, index) => (
-                      <div key={index} className={styles['time-slot']}>
+                      <div key={index} className={styles["time-slot"]}>
                         {timeSlot.toString().padStart(2, "0") + ":00"}
                       </div>
                     ))}
@@ -832,7 +877,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
                                 leaveDelay={0}
                               >
                                 <div
-                                  className={`${styles['time-slot']} ${
+                                  className={`${styles["time-slot"]} ${
                                     isExpiredDate && styles.expiredTimeSlot
                                   } ${
                                     bookingInfoStore.startTime &&
@@ -856,12 +901,18 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
                                   }
                                 >
                                   {isBooked ? (
-                                    <span className={styles.unAvailableSlot}>NA</span>
+                                    <span className={styles.unAvailableSlot}>
+                                      NA
+                                    </span>
                                   ) : (
-                                    <span className={styles.availableSlot}>Book</span>
+                                    <span className={styles.availableSlot}>
+                                      Book
+                                    </span>
                                   )}
                                   <span className={styles.selectedSlot}>
-                                    <CheckCircleOutlineIcon className={styles.icon} />
+                                    <CheckCircleOutlineIcon
+                                      className={styles.icon}
+                                    />
                                   </span>
                                   <span className={styles.expiredSlot}>
                                     {/* <DoNotDisturbIcon className={styles.icon} /> */}

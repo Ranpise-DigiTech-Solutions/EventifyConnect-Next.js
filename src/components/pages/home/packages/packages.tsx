@@ -20,9 +20,12 @@ const PackagesComponent = (props: Props) => {
   const [animateCard, setAnimateCard] = useState({ y: 0, opacity: 1 }); // Card Animation when clicked on TAGS
   const [filteredCards, setFilteredCards] = useState<Array<any>>([]); // Filtering cards based on the TAGS..Ex: Most Popular, Top Rated etc..
 
+  const [pageNo, setPageNo] = useState<number>(0); // current page no.
+  const [cardCount, setCardCount] = useState<number>(6);
+  const [totalPages, setTotalPages] = useState<number>(0); // set it according to data fetched from database
+
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 6;
 
   const searchBoxFilterStore = useSelector(
@@ -124,6 +127,8 @@ const PackagesComponent = (props: Props) => {
               selectedDate: selectedDate ? selectedDate : formattedDate,
               eventId: eventId,
               filter: activeFilter,
+              page: pageNo,
+              limit: cardCount,
             },
             headers: {
               "Content-Type": "application/json",
@@ -136,16 +141,15 @@ const PackagesComponent = (props: Props) => {
 
         if (activeFilter === "Available") {
           const filteredCardsBasedOnAvailability = mergeSort(
-            hallMasterResponse.data
+            hallMasterResponse.data?.hallAvailability
           );
           setFilteredCards(filteredCardsBasedOnAvailability);
         }
-        setFilteredCards(hallMasterResponse.data);
+        setFilteredCards(hallMasterResponse.data?.hallAvailability);
         setTotalPages(
-          Math.ceil(
-            Object.values(hallMasterResponse.data).length / itemsPerPage
-          )
+          hallMasterResponse.data?.totalCount
         );
+        console.log(hallMasterResponse.data?.totalCount);
       } catch (error) {
         console.error("Error fetching data:", error);
       }

@@ -48,7 +48,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import { FcGoogle } from "react-icons/fc";
 import { FaUserAlt, FaEdit } from "react-icons/fa";
 
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import styles from "./user-auth-dialog.module.scss";
 import { firebaseAuth } from "@/lib/db/firebase";
 import { verifyUserByEmail } from "@/lib/utils/verify-user";
@@ -61,6 +61,7 @@ import {
   OTPVerificationForm,
 } from "@/components/sub-components";
 import { RootState } from "@/redux/store";
+import Image from "next/image";
 
 // Define the Transition component with correct types
 const Transition = React.forwardRef<HTMLDivElement, SlideProps>(
@@ -203,7 +204,7 @@ const UserAuthDialogComponent = ({
 
   const handleIsOTPVerified = () => {
     setIsOTPVerified(true);
-  }
+  };
 
   const handleUserRegAgreement = (
     key: keyof userRegAgreementType,
@@ -261,11 +262,11 @@ const UserAuthDialogComponent = ({
   };
 
   const handleSignInWithPassword = async () => {
-    if(!executeRecaptcha) {
+    if (!executeRecaptcha) {
       return;
     }
     setLoadingScreen(true);
-    const captchaToken = await executeRecaptcha('inquirySubmit');
+    const captchaToken = await executeRecaptcha("inquirySubmit");
 
     if (
       inputValue &&
@@ -283,12 +284,13 @@ const UserAuthDialogComponent = ({
         // verify wether user exists and verify his password before signing-in
         const response = await axios.post(
           `/api/routes/userAuthentication/loginWithPassword/`,
-          postData, {
+          postData,
+          {
             headers: {
-              'Content-Type': 'application/json',
-              'X-Captcha-Token': captchaToken,
+              "Content-Type": "application/json",
+              "X-Captcha-Token": captchaToken,
             },
-            withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
         );
         localStorage.setItem("userAccessToken", JSON.stringify(response.data));
@@ -352,7 +354,7 @@ const UserAuthDialogComponent = ({
           // Handle Errors here.
           const errorCode = error.code;
           const errorMessage = error.message;
-          
+
           // The email of the user's account used.
           const email = error.customData.email;
           // The AuthCredential type that was used.
@@ -379,7 +381,7 @@ const UserAuthDialogComponent = ({
           const token = credential?.accessToken;
 
           const user = result.user;
-          
+
           // IdP data available using getAdditionalUserInfo(result)
           // ...
         })
@@ -402,11 +404,11 @@ const UserAuthDialogComponent = ({
   //   firebaseAuth.languageCode = "it";
   //   try {
   //     const onCaptchaVerification = () => {
-  //       
+  //
   //       signInWithPhoneNumber(firebaseAuth, "+919740605350", reCaptchaVerifier)
   //         .then((confirmationResult) => {
   //           // Store confirmationResult for later use
-  //           
+  //
   //           // Prompt user to enter verification code
   //           // Handle the confirmation code from the user
   //           // const verificationCode = prompt('Enter the verification code sent to your phone:');
@@ -415,14 +417,14 @@ const UserAuthDialogComponent = ({
   //           //     confirmationResult.confirm(verificationCode)
   //           //         .then((result) => {
   //           //             // User successfully signed in
-  //           //             
+  //           //
   //           //         })
   //           //         .catch((error) => {
   //           //             // Error confirming verification code
   //           //             console.error("Error confirming verification code:", error);
   //           //         });
   //           // } else {
-  //           //     
+  //           //
   //           // }
   //         })
   //         .catch((error) => {
@@ -445,12 +447,12 @@ const UserAuthDialogComponent = ({
   // };
 
   const handleSignUp = async () => {
-    if(!executeRecaptcha) {
+    if (!executeRecaptcha) {
       return;
     }
     // here the postdata will be customerInfo and vendorInfo Object defined above
     setLoadingScreen(true);
-    const captchaToken = await executeRecaptcha('inquirySubmit');
+    const captchaToken = await executeRecaptcha("inquirySubmit");
 
     try {
       const userCredential =
@@ -487,10 +489,10 @@ const UserAuthDialogComponent = ({
 
       const response = await axios.post(url, postData, {
         headers: {
-          'Content-Type': 'application/json',
-          'X-Captcha-Token': captchaToken,
+          "Content-Type": "application/json",
+          "X-Captcha-Token": captchaToken,
         },
-        withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+        withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
       });
       localStorage.setItem("userAccessToken", response.data);
       dispatch(toggleUserAuthStateChangeFlag());
@@ -506,14 +508,12 @@ const UserAuthDialogComponent = ({
 
   // to trigger handleSignUp once users have verified their respective OTP's
   useEffect(() => {
-    if(!isOTPVerified) {
+    if (!isOTPVerified) {
       return;
     }
     try {
       handleSignUp();
-    } catch (error) {
-      
-    }
+    } catch (error) {}
   }, [isOTPVerified, executeRecaptcha]);
 
   const customSelectStyles = {
@@ -551,9 +551,9 @@ const UserAuthDialogComponent = ({
         setInputError("Couldn't find your account");
       } else {
         setLoadingScreen(true);
-        let userExists = false;        
+        let userExists = false;
         if (executeRecaptcha) {
-          const captchaToken = await executeRecaptcha('inquirySubmit');
+          const captchaToken = await executeRecaptcha("inquirySubmit");
           userExists = await verifyUserByEmail(inputValue, captchaToken);
         }
         if (!userExists) {
@@ -592,11 +592,12 @@ const UserAuthDialogComponent = ({
           handleErrorInfo("email", "Couldn't find your account");
         } else {
           setLoadingScreen(true);
-          let userExists = false;        
+          let userExists = false;
           if (executeRecaptcha) {
-            const captchaToken = await executeRecaptcha('inquirySubmit');
+            const captchaToken = await executeRecaptcha("inquirySubmit");
             userExists = await verifyUserByEmail(
-              vendorInfo.email, captchaToken
+              vendorInfo.email,
+              captchaToken
             );
           }
           if (userExists) {
@@ -672,11 +673,12 @@ const UserAuthDialogComponent = ({
         handleErrorInfo("email", "Couldn't find your account");
       } else {
         setLoadingScreen(true);
-        let userExists = false;        
+        let userExists = false;
         if (executeRecaptcha) {
-          const captchaToken = await executeRecaptcha('inquirySubmit');
+          const captchaToken = await executeRecaptcha("inquirySubmit");
           userExists = await verifyUserByEmail(
-            customerInfo.email, captchaToken
+            customerInfo.email,
+            captchaToken
           );
         }
         if (userExists) {
@@ -772,8 +774,6 @@ const UserAuthDialogComponent = ({
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    
-
     if (authType === "LOGIN") {
       validateLoginForm();
     } else if (authType === "REGISTER") {
@@ -825,7 +825,7 @@ const UserAuthDialogComponent = ({
         >
           <div className={styles.img__wrapper}>
             <p>
-              India&apos;s Favourite <br /> Wedding planning <br /> paltform
+              India&apos;s Favorite <br /> Wedding planning <br /> platform
             </p>
             <img src={"/images/loginPageBg.jpg"} alt="" />
           </div>
@@ -839,10 +839,16 @@ const UserAuthDialogComponent = ({
               <img src={"/images/logo.png"} alt="" />
             </div>
             <h2 className={styles.heading}>
-              {authType === "LOGIN" ? (
-                <span>Sign In to EventifyConnect</span>
+              {userType === "CUSTOMER" ? (
+                authType === "LOGIN" ? (
+                  <span>Sign In as Customer</span>
+                ) : (
+                  <span>Sign Up as Customer</span>
+                )
+              ) : authType === "LOGIN" ? (
+                <span>Sign In as Vendor</span>
               ) : (
-                <span>Sign Up with EventifyConnect</span>
+                <span>Sign Up as Vendor</span>
               )}
             </h2>
             <p className={styles.description}>
@@ -1631,7 +1637,13 @@ const UserAuthDialogComponent = ({
                         handleDialogClose={handleClose}
                         userType={userType}
                         authType={authType}
-                        emailId={authType === "LOGIN" ? inputValue : userType === "CUSTOMER" ? customerInfo.email : vendorInfo.email}
+                        emailId={
+                          authType === "LOGIN"
+                            ? inputValue
+                            : userType === "CUSTOMER"
+                            ? customerInfo.email
+                            : vendorInfo.email
+                        }
                         handleIsOTPVerified={handleIsOTPVerified}
                       />
                     )}
