@@ -4,12 +4,14 @@ import mongoose, { Schema, Document } from "mongoose";
 interface VendorTypes extends Document {
     vendorType: string;
     vendorTypeDesc: string;
+    vendorTag: string;
 }
 
 // Define your schema
 const vendorTypesSchema = new Schema<VendorTypes>({
     vendorType: { type: String, required: true, unique: true },
     vendorTypeDesc: { type: String, required: true },
+    vendorTag: { type: String, required: true},
 }, { timestamps: true });
 
 // Define and export your model

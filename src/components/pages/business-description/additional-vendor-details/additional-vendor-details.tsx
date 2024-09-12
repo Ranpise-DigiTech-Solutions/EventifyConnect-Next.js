@@ -1,7 +1,9 @@
-"use client"
+/* eslint-disable @next/next/no-img-element */
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks/use-redux-store";
+import { format } from "date-fns";
 
 import Snackbar from "@mui/material/Snackbar";
 import IconButton from "@mui/material/IconButton";
@@ -26,48 +28,24 @@ import PlaceIcon from "@mui/icons-material/Place";
 import ErrorIcon from "@mui/icons-material/Error";
 import VerifiedIcon from "@mui/icons-material/Verified";
 
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { firebaseAuth } from "@/lib/db/firebase";
 import { setBookingInfoData } from "@/redux/slices/booking-info";
 import { onAuthStateChanged } from "firebase/auth";
 import { ContactForm } from "@/components/sub-components";
 import styles from "./additional-vendor-details.module.scss";
+import axios from "axios";
 
 type Props = {
   handleBookingDetailsDialogOpen: () => void;
   hallData: any;
 };
 
-const similarVendorsData = [
-  {
-    brandName: "Sun Hotel & Resort",
-    location: "Abu Road, Udaipur",
-    ratings: 4.9,
-    reviews: 41,
-    availability: "AVAILABLE",
-    Image: "/images/Hall_05.jpg",
-  },
-  {
-    brandName: "Sun Hotel & Resort",
-    location: "Abu Road, Udaipur",
-    ratings: 4.9,
-    reviews: 41,
-    availability: "AVAILABLE",
-    Image: "/images/Hall_04.jpg",
-  },
-  {
-    brandName: "Sun Hotel & Resort",
-    location: "Abu Road, Udaipur",
-    ratings: 4.9,
-    reviews: 41,
-    availability: "AVAILABLE",
-    Image: "/images/Hall_06.jpg",
-  },
-];
-
 const AdditionalVendorDetailsComponent = ({
   handleBookingDetailsDialogOpen,
   hallData,
 }: Props) => {
+  const { executeRecaptcha } = useGoogleReCaptcha();
   const dispatch = useAppDispatch();
   const bookingInfoStore = useAppSelector((state) => state.bookingInfo);
   const userInfoStore = useAppSelector((state) => state.userInfo);
@@ -81,8 +59,15 @@ const AdditionalVendorDetailsComponent = ({
   const [isMessageSent, setIsMessageSent] = useState<boolean>(false); // to toggle snackBar
   const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean>(false); //user login status
 
+  const [pageNo, setPageNo] = useState<number>(0); // current page no.
+  const [cardCount, setCardCount] = useState<number>(3);
+  const [totalPages, setTotalPages] = useState<number>(0); // set it according to data fetched from database
+  const [similarVendorsData, setSimilarVendorsData] = useState<Array<any>>();
+
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
+
+  console.log(hallData);
 
   function getDayOfWeek(date: Date): string {
     const daysOfWeek = [
@@ -132,6 +117,46 @@ const AdditionalVendorDetailsComponent = ({
 
     setIsMessageSent(false);
   };
+
+  useEffect(() => {
+    if (!executeRecaptcha) {
+      return;
+    }
+
+    const fetchSimilarHalls = async () => {
+      const captchaToken = await executeRecaptcha("inquirySubmit");
+      const today = new Date();
+      const formattedDate = format(today, "yyyy-MM-dd");
+
+      const hallMasterResponse = await axios.get(
+        `/api/routes/hallBookingMaster/getHallsAvailabilityStatus/`,
+        {
+          params: {
+            selectedCity: "Mangalore",
+            selectedDate: formattedDate,
+            eventId: "",
+            filter: "Most Popular",
+            page: pageNo,
+            limit: cardCount,
+          },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Captcha-Token": captchaToken,
+          },
+          withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
+        }
+      );
+      setSimilarVendorsData(hallMasterResponse.data?.hallAvailability);
+      setTotalPages(Math.ceil(hallMasterResponse.data?.totalPages / 3));
+      // @TODO:Error Handling
+    };
+
+    try {
+      fetchSimilarHalls();
+    } catch (error) {
+      console.error(error);
+    }
+  }, [executeRecaptcha, cardCount, pageNo]);
 
   const snackBarAction = (
     <React.Fragment>
@@ -282,7 +307,7 @@ const AdditionalVendorDetailsComponent = ({
 
   const handleBookBtnClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     const currentUser = firebaseAuth.currentUser;
-    
+
     if (!currentUser) {
       handleSignInAlertDialogOpen();
       return;
@@ -417,7 +442,7 @@ const AdditionalVendorDetailsComponent = ({
         <div className={styles.contactBtn__wrapper}>
           <button className={styles.btn} onClick={handleSendMessageDialogOpen}>
             <MailOutlineIcon className={styles.icon} />
-            <p className={styles['btn-caption']}>Send Message</p>
+            <p className={styles["btn-caption"]}>Send Message</p>
           </button>
           <button
             className={styles.btn}
@@ -430,7 +455,7 @@ const AdditionalVendorDetailsComponent = ({
             }}
           >
             <PhoneIcon className={styles.icon} />
-            <p className={styles['btn-caption']}>View Contact</p>
+            <p className={styles["btn-caption"]}>View Contact</p>
           </button>
         </div>
       </div>
@@ -440,42 +465,43 @@ const AdditionalVendorDetailsComponent = ({
           <button className={styles.btn}>View All</button>
         </div>
         <div className={styles.vendorList__wrapper}>
-          {similarVendorsData.map((data, index) => (
-            <div className={styles.vendor} key={index}>
-              <div className={styles.img__wrapper}>
-                <img src={data.Image} alt="" />
-              </div>
-              <div className={styles.contents__wrapper}>
-                <div className={styles['sub-contents__wrapper']}>
-                  <div className={`${styles.wrapper} ${styles['wrapper-1']}`}>
-                    <p className={styles.title}>{data.brandName}</p>
-                    <div className={styles.ratings__wrapper}>
-                      <StarIcon className={styles.icon} />
-                      <p className={styles.rating}>{data.ratings}</p>
+          {similarVendorsData &&
+            similarVendorsData.map((data, index) => (
+              <div className={styles.vendor} key={index}>
+                <div className={styles.img__wrapper}>
+                  <img src={data?.hallImages[0]} alt="" />
+                </div>
+                <div className={styles.contents__wrapper}>
+                  <div className={styles["sub-contents__wrapper"]}>
+                    <div className={`${styles.wrapper} ${styles["wrapper-1"]}`}>
+                      <p className={styles.title}>{data?.hallName}</p>
+                      <div className={styles.ratings__wrapper}>
+                        <StarIcon className={styles.icon} />
+                        <p className={styles.rating}>{data?.hallUserRating}</p>
+                      </div>
+                    </div>
+                    <div className={`${styles.wrapper} ${styles["wrapper-2"]}`}>
+                      <div className={styles.location__wrapper}>
+                        <PlaceIcon className={styles.icon} />
+                        <p className={styles.location}>{data?.hallTaluk + ", " + data?.hallCity}</p>
+                      </div>
+                      <p className={styles.reviews}>41 reviews</p>
                     </div>
                   </div>
-                  <div className={`${styles.wrapper} ${styles['wrapper-2']}`}>
-                    <div className={styles.location__wrapper}>
-                      <PlaceIcon className={styles.icon} />
-                      <p className={styles.location}>{data.location}</p>
+                  <div className={styles["sub-contents__wrapper"]}>
+                    <div className={`${styles.wrapper} ${styles["wrapper-3"]}`}>
+                      <p>{data?.availability}</p>
                     </div>
-                    <p className={styles.reviews}>41 reviews</p>
-                  </div>
-                </div>
-                <div className={styles['sub-contents__wrapper']}>
-                  <div className={`${styles.wrapper} ${styles['wrapper-3']}`}>
-                    <p>{data.availability}</p>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
         <div className={styles.navigationBtns__wrapper}>
-          <button className={styles.btn} title={styles.leftIcon}>
+          <button className={styles.btn} title={styles.leftIcon} disabled={pageNo === 0} onClick={()=>setPageNo(pageNo - 1)}>
             <KeyboardArrowLeftIcon className={styles.icon} />
           </button>
-          <button className={styles.btn} title={styles.rightIcon}>
+          <button className={styles.btn} title={styles.rightIcon} disabled={pageNo === totalPages} onClick={()=>setPageNo(pageNo + 1)}>
             <KeyboardArrowRightIcon className={styles.icon} />
           </button>
         </div>
@@ -547,7 +573,7 @@ const AdditionalVendorDetailsComponent = ({
           <div className={styles.wrapper}>
             <p className={styles.inputTitle}>Booking Duration</p>
             <div className={styles.input__wrapper}>
-              <div className={styles['sub-wrapper']}>
+              <div className={styles["sub-wrapper"]}>
                 <label htmlFor="hoursInput" className={styles.label}>
                   Hours:
                 </label>
@@ -559,11 +585,11 @@ const AdditionalVendorDetailsComponent = ({
                       ? parseInt(bookingInfoStore.bookingDuration.split(":")[0])
                       : ""
                   }
-                  className={styles['sub-input']}
+                  className={styles["sub-input"]}
                   disabled
                 />
               </div>
-              <div className={styles['sub-wrapper']}>
+              <div className={styles["sub-wrapper"]}>
                 <label htmlFor="minutesInput" className={styles.label}>
                   Minutes:
                 </label>
@@ -577,7 +603,7 @@ const AdditionalVendorDetailsComponent = ({
                         )
                       : ""
                   }
-                  className={styles['sub-input']}
+                  className={styles["sub-input"]}
                   disabled
                 />
               </div>

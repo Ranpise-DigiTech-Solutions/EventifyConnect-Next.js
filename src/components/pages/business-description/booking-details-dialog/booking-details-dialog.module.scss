@@ -1,6 +1,6 @@
 .bookingConfirmationScreen__container {
-  height: 95vh;
-  width: 57vw;
+  min-height: auto;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -181,8 +181,8 @@
 }
 
 .bookingDetailsMain__container {
-  height: 120vh;
-  width: 57vw;
+  min-height: auto;
+  width: 100%;
 
   padding: 2rem 3rem;
 
@@ -191,6 +191,7 @@
   align-items: flex-start;
   justify-content: center;
 
+  // overflow: auto;
   background-color: var(--secondary-color);
   font-family: var(--font-family-1);
 
@@ -493,6 +494,18 @@
             color: var(--gray-color);
           }
         }
+
+        .transferInput__wrapper {
+          width: 100%;
+          display: flex;
+          // flex-direction: row;
+          justify-content: center;
+          align-items: center;
+
+          .table {
+            width: 100%;
+          }
+        }
       }
 
       .inputFields__wrapper {
@@ -632,6 +645,82 @@
 
           &:nth-child(2) {
             margin-left: 1.5rem;
+          }
+        }
+      }
+
+      .multiCarousel__wrapper {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 2rem;
+        // overflow-x: hidden;
+
+        .wrapper {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: flex-start;
+          gap: 0.5rem;
+
+          .title {
+            font-size: 16px;
+            font-weight: 600;
+            font-style: normal;
+            text-transform: capitalize;
+            text-decoration: none;
+  
+            margin-bottom: 0.2rem;
+  
+            span {
+              color: red;
+            }
+          }
+  
+          .carousel__wrapper {
+            width: 100% !important;
+            // overflow-x: scroll;
+  
+            .carousel {
+              width: 100% !important;
+              display: inline-block;
+              position: relative;
+            
+              .carousel__item {
+                height: 300px; // Change as per your need
+                max-width: 350px !important; // Ensure it takes full width
+                margin: 0 1rem;
+                background-color: #007bff;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                color: white;
+                font-size: 18px;
+                cursor: pointer;
+              }
+
+              .selected__item {
+                position: relative;
+                opacity: 85;
+                background-color: rgba(40, 167, 69, 0.6);
+                border: 2px solid #28a745;
+
+                &::before {
+                  content: "✓"; // Tick mark
+                  color: white;
+                  font-size: 40px;
+                  font-weight: bold;
+                  position: absolute;
+                  top: 50%;
+                  left: 50%;
+                  transform: translate(-50%, -50%);
+                }
+              }
+
+            }
           }
         }
       }

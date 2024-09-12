@@ -5,6 +5,13 @@ import React, { useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/hooks/use-redux-store";
 import axios from "axios";
 import Select, { SingleValue } from "react-select";
+import { Flex, Switch, Table, Tag, Transfer } from "antd";
+import type {
+  GetProp,
+  TableColumnsType,
+  TableProps,
+  TransferProps,
+} from "antd";
 
 import Dialog from "@mui/material/Dialog";
 import Button from "@mui/material/Button";
@@ -36,6 +43,7 @@ import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { LoadingScreen } from "@/components/sub-components";
 import styles from "./booking-details-dialog.module.scss";
 import { RootState } from "@/redux/store";
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 
 type Props = {
   open: boolean;
@@ -43,6 +51,128 @@ type Props = {
   hallData: any;
   serviceProviderData: any;
 };
+
+// *** START OF OTHER-VENDOR-TRANSFER-LIST RELATED VARIABLES ***
+
+interface OtherVendorsTransferListDataType {
+  key: string;
+  title: string;
+  description: string;
+  tag: string;
+}
+
+interface OtherVendorsTableTransferProps extends TransferProps<TransferItem> {
+  dataSource: OtherVendorsTransferListDataType[];
+  leftColumns: TableColumnsType<OtherVendorsTransferListDataType>;
+  rightColumns: TableColumnsType<OtherVendorsTransferListDataType>;
+}
+
+type TransferItem = GetProp<TransferProps, "dataSource">[number];
+type TableRowSelection<T extends object> = TableProps<T>["rowSelection"];
+
+// Customize Table Transfer
+const TableTransfer: React.FC<OtherVendorsTableTransferProps> = (props) => {
+  const { leftColumns, rightColumns, ...restProps } = props;
+  return (
+    <Transfer
+      style={{ minWidth: "100%", flex: 1 }}
+      {...restProps}
+      titles={["List of Vendors", "Your Selection"]}
+    >
+      {({
+        direction,
+        filteredItems,
+        onItemSelect,
+        onItemSelectAll,
+        selectedKeys: listSelectedKeys,
+        disabled: listDisabled,
+      }) => {
+        const columns = direction === "left" ? leftColumns : rightColumns;
+        const rowSelection: TableRowSelection<TransferItem> = {
+          getCheckboxProps: () => ({ disabled: listDisabled }),
+          onChange(selectedRowKeys) {
+            onItemSelectAll(selectedRowKeys, "replace");
+          },
+          selectedRowKeys: listSelectedKeys,
+          selections: [
+            Table.SELECTION_ALL,
+            Table.SELECTION_INVERT,
+            Table.SELECTION_NONE,
+          ],
+        };
+
+        return (
+          <Table
+            rowSelection={rowSelection}
+            columns={columns}
+            dataSource={filteredItems}
+            size="large"
+            style={{
+              width: "100%",
+              pointerEvents: listDisabled ? "none" : undefined,
+            }}
+            onRow={({ key, disabled: itemDisabled }) => ({
+              onClick: () => {
+                if (itemDisabled || listDisabled) {
+                  return;
+                }
+                onItemSelect(key, !listSelectedKeys.includes(key));
+              },
+            })}
+          />
+        );
+      }}
+    </Transfer>
+  );
+};
+
+// *** END OF OTHER-VENDOR-TRANSFER-LIST RELATED VARIABLES ***
+
+// type of react select options
+interface ReactSelectOptionType {
+  label: string;
+  value: string;
+}
+
+interface ReactSelectBooleanOptionType {
+  value: boolean;
+  label: string;
+}
+
+interface bookingDetailsType {
+  bookingId: string;
+  eventTypeInfo: {
+    eventType: string;
+    eventTypeId: string;
+  };
+  guestsCount: number | null;
+  roomsCount: number | null;
+  parkingRequirement: {
+    label: string;
+    value: boolean;
+  } | null;
+  vehiclesCount: number | null;
+  expectedVegRate: number | null;
+  expectedNonVegRate: number | null;
+  vegMenu: string;
+  nonVegMenu: string;
+  catererRequirement: {
+    label: string;
+    value: boolean;
+  } | null;
+  customerSuggestion: string;
+}
+
+interface bookingDetailsErrorInfoType
+  extends Omit<
+    bookingDetailsType,
+    "eventTypeInfo" | "guestsCount" | "roomsCount" | "vehiclesCount"
+  > {
+  eventTypeInfo: string;
+  guestsCount: string;
+  roomsCount: string;
+  vehiclesCount: string;
+}
 
 const BookingDetailsDialogComponent = ({
   open,
@@ -68,16 +198,76 @@ const BookingDetailsDialogComponent = ({
     useState(false); // toggle booking confirmation screen
   const [alertDialog, setAlertDialog] = useState(false); // to show error messages
 
-  // type of react select options
-  interface ReactSelectOptionType {
-    label: string;
-    value: string;
-  }
+  // *** START OF VENDOR-TRANSFER-LIST RELATED VARIABLES ***
 
-  interface ReactSelectBooleanOptionType {
-    value: boolean;
-    label: string;
-  }
+  const otherVendorTransferListMockData = Array.isArray(
+    dataStore.vendorTypes.data
+  )
+    ? dataStore.vendorTypes.data
+        ?.filter(
+          (item: { vendorType: string }) => item.vendorType !== "Banquet Hall"
+        )
+        .map(
+          (item: {
+            _id: string;
+            vendorType: string;
+            vendorTypeDesc: string;
+            vendorTag: string;
+          }) => ({
+            key: item._id,
+            title: item.vendorType,
+            description: item.vendorTypeDesc,
+            tag: item.vendorTag,
+          })
+        )
+    : [];
+
+  const otherVendorTransferListColumns: TableColumnsType<OtherVendorsTransferListDataType> =
+    [
+      {
+        dataIndex: "title",
+        title: "Name",
+      },
+      {
+        dataIndex: "tag",
+        title: "Tag",
+        render: (tag: string) => (
+          <Tag style={{ marginInlineEnd: 0 }} color="cyan">
+            {tag?.toUpperCase()}
+          </Tag>
+        ),
+      },
+      {
+        dataIndex: "description",
+        title: "Description",
+      },
+    ];
+
+  const otherVendorTransferListFilterOption = (
+    input: string,
+    item: OtherVendorsTransferListDataType
+  ) => item.title?.includes(input) || item.tag?.includes(input);
+
+  const [
+    otherVendorTransferListTargetKeys,
+    setOtherVendorTransferListTTargetKeys,
+  ] = useState<TransferProps["targetKeys"]>([]);
+  const [
+    otherVendorTransferListFieldDisabled,
+    setOtherVendorTransferListFieldDisabled,
+  ] = useState(false);
+
+  const otherVendorTransferListOnChange: OtherVendorsTableTransferProps["onChange"] =
+    (nextTargetKeys) => {
+      setOtherVendorTransferListTTargetKeys(nextTargetKeys);
+    };
+
+  const otherVendorTransferListToggleDisabled = (checked: boolean) => {
+    setOtherVendorTransferListFieldDisabled(checked);
+  };
+  // *** END OF VENDOR-TRANSFER-LIST RELATED VARIABLES ***
+
+  console.log(otherVendorTransferListTargetKeys);
 
   const ReactSelectBooleanOptions: ReactSelectBooleanOptionType[] = [
     {
@@ -118,30 +308,6 @@ const BookingDetailsDialogComponent = ({
     }),
   };
 
-  interface bookingDetailsType {
-    bookingId: string;
-    eventTypeInfo: {
-      eventType: string;
-      eventTypeId: string;
-    };
-    guestsCount: number | null;
-    roomsCount: number | null;
-    parkingRequirement: {
-      label: string;
-      value: boolean;
-    } | null;
-    vehiclesCount: number | null;
-    expectedVegRate: number | null;
-    expectedNonVegRate: number | null;
-    vegMenu: string;
-    nonVegMenu: string;
-    catererRequirement: {
-      label: string;
-      value: boolean;
-    } | null;
-    customerSuggestion: string;
-  }
-
   const bookingDetailsTemplate = {
     bookingId: "",
     eventTypeInfo: {
@@ -170,17 +336,6 @@ const BookingDetailsDialogComponent = ({
   const [bookingDetails, setBookingDetails] = useState({
     ...bookingDetailsTemplate,
   });
-
-  interface bookingDetailsErrorInfoType
-    extends Omit<
-      bookingDetailsType,
-      "eventTypeInfo" | "guestsCount" | "roomsCount" | "vehiclesCount"
-    > {
-    eventTypeInfo: string;
-    guestsCount: string;
-    roomsCount: string;
-    vehiclesCount: string;
-  }
 
   const [bookingDetailsErrorInfo, setBookingDetailsErrorInfo] = useState({
     ...bookingDetailsTemplate,
@@ -211,9 +366,6 @@ const BookingDetailsDialogComponent = ({
       [key]: value,
     }));
   };
-
-  
-  
 
   function parseDate(dateString: string, splitCriteria: string): Date | null {
     if (splitCriteria === "/") {
@@ -269,16 +421,22 @@ const BookingDetailsDialogComponent = ({
     }
     if (!bookingDetails.guestsCount) {
       handleBookingDetailsErrorInfo("guestsCount", "Guests count is required");
-    } else if (bookingDetails.guestsCount < 0 ) {
-      handleBookingDetailsErrorInfo("guestsCount", "Guest count cannot be less than 0");
+    } else if (bookingDetails.guestsCount < 0) {
+      handleBookingDetailsErrorInfo(
+        "guestsCount",
+        "Guest count cannot be less than 0"
+      );
     } else {
       handleBookingDetailsErrorInfo("guestsCount", "");
     }
     if (!bookingDetails.roomsCount) {
       handleBookingDetailsErrorInfo("roomsCount", "Rooms count is required");
-    }else if (bookingDetails.roomsCount < 0 ) {
-      handleBookingDetailsErrorInfo("roomsCount", "Rooms count cannot be less than 0");
-    }  else {
+    } else if (bookingDetails.roomsCount < 0) {
+      handleBookingDetailsErrorInfo(
+        "roomsCount",
+        "Rooms count cannot be less than 0"
+      );
+    } else {
       handleBookingDetailsErrorInfo("roomsCount", "");
     }
     if (!bookingDetails.vehiclesCount) {
@@ -302,12 +460,16 @@ const BookingDetailsDialogComponent = ({
         setFormType("FORM_ONE");
         break;
       case "FORM_THREE":
-        setFormProgress(25);
+        setFormProgress(20);
         setFormType("FORM_TWO");
         break;
       case "FORM_FOUR":
-        setFormProgress(50);
+        setFormProgress(40);
         setFormType("FORM_THREE");
+        break;
+      case "FORM_FIVE":
+        setFormProgress(60);
+        setFormType("FORM_FOUR");
         break;
       default:
         break;
@@ -317,18 +479,22 @@ const BookingDetailsDialogComponent = ({
   const handleNextBtnClick = () => {
     switch (formType) {
       case "FORM_ONE":
-        setFormProgress(25);
+        setFormProgress(20);
         setFormType("FORM_TWO");
         break;
       case "FORM_TWO":
-        setFormProgress(50);
+        setFormProgress(40);
         validateFormTwo();
         break;
       case "FORM_THREE":
-        setFormProgress(75);
+        setFormProgress(60);
         setFormType("FORM_FOUR");
         break;
       case "FORM_FOUR":
+        setFormProgress(80);
+        setFormType("FORM_FIVE");
+        break;
+      case "FORM_FIVE":
         handleSubmissionConfirmationDialogOpen();
         break;
       default:
@@ -364,7 +530,7 @@ const BookingDetailsDialogComponent = ({
         0,
         0
       );
-      
+
       const postData = {
         hallId: hallData._id,
         hallCity: hallData.hallCity,
@@ -416,11 +582,10 @@ const BookingDetailsDialogComponent = ({
           withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
         }
       );
-      
+
       setIsLoading(false);
       handleBookingDetailsInfo("bookingId", response.data?.documentId);
     } catch (error) {
-      
       setIsLoading(false);
       setAlertDialog(true);
     }
@@ -438,7 +603,7 @@ const BookingDetailsDialogComponent = ({
         setFormType("FORM_ONE");
         handleClose();
       }}
-      maxWidth="md"
+      maxWidth="lg"
       fullWidth
     >
       {isLoading && (
@@ -494,7 +659,7 @@ const BookingDetailsDialogComponent = ({
           <Button
             onClick={() => {
               handleSubmissionConfirmationDialogClose();
-                handleFormSubmit();
+              handleFormSubmit();
             }}
             autoFocus
           >
@@ -609,9 +774,31 @@ const BookingDetailsDialogComponent = ({
             </div>
             <div
               className={`${styles.navigationTab} ${
-                formType === "FORM_THREE"
+                formType !== "FORM_ONE" &&
+                formType !== "FORM_TWO" &&
+                (formType === "FORM_THREE"
                   ? styles.current__form
-                  : formType === "FORM_FOUR" && styles.form__completed
+                  : styles.form__completed)
+              }`}
+            >
+              <div className={styles.tabHeading}>other vendors</div>
+              <div className={styles.wrapper}>
+                <div className={styles["sub-wrapper"]}>
+                  <PersonIcon className={styles.icon} />
+                  <p className={styles.stepCount}>step 2</p>
+                </div>
+                <div className={styles.btn}>
+                  {formType === "FORM_FOUR" || formType === "FORM_FIVE"
+                    ? "Completed"
+                    : "Pending"}
+                </div>
+              </div>
+            </div>
+            <div
+              className={`${styles.navigationTab} ${
+                formType === "FORM_FOUR"
+                  ? styles.current__form
+                  : formType === "FORM_FIVE" && styles.form__completed
               }`}
             >
               <div className={styles.tabHeading}>user details</div>
@@ -621,13 +808,13 @@ const BookingDetailsDialogComponent = ({
                   <p className={styles.stepCount}>step 3</p>
                 </div>
                 <div className={styles.btn}>
-                  {formType === "FORM_FOUR" ? "Completed" : "Pending"}
+                  {formType === "FORM_FIVE" ? "Completed" : "Pending"}
                 </div>
               </div>
             </div>
             <div
               className={`${styles.navigationTab} ${
-                formType === "FORM_FOUR" && styles.current__form
+                formType === "FORM_FIVE" && styles.current__form
               }`}
             >
               <div className={styles.tabHeading}>date & time</div>
@@ -1147,9 +1334,77 @@ const BookingDetailsDialogComponent = ({
                     </div>
                   </>
                 )}
+                <div className={styles.inputField__wrapper}>
+                  <div className={styles.title}>
+                    Other Vendors Preferences <span>*</span>
+                  </div>
+                  <div className="transferInput__wrapper">
+                    <Flex
+                      align="center"
+                      gap="middle"
+                      vertical
+                      style={{ width: "100%", minWidth: "69vw" }}
+                    >
+                      <TableTransfer
+                        dataSource={otherVendorTransferListMockData}
+                        targetKeys={otherVendorTransferListTargetKeys}
+                        disabled={otherVendorTransferListFieldDisabled}
+                        showSearch
+                        showSelectAll={true}
+                        onChange={otherVendorTransferListOnChange}
+                        filterOption={otherVendorTransferListFilterOption}
+                        leftColumns={otherVendorTransferListColumns}
+                        rightColumns={otherVendorTransferListColumns}
+                      />
+                    </Flex>
+                  </div>
+                </div>
               </div>
             )}
-            {formType == "FORM_THREE" && (
+            {formType === "FORM_THREE" && (
+              <div
+                className={`${styles.container} ${styles.otherVendors__container}`}
+              >
+                <div className={styles.multiCarousel__wrapper}>
+                  {otherVendorTransferListTargetKeys?.map((key, index) => {
+                    const currentItem = dataStore.vendorTypes?.data?.filter(
+                      (item: { _id: string }) => item._id === key
+                    );
+                    return (
+                      <div key={index} className={styles.wrapper}>
+                        <div className={styles.title}>
+                          {currentItem[0]?.vendorType}
+                        </div>
+                        <div className={styles.carousel__wrapper}>
+                          <Carousel
+                            opts={{
+                              align: "start",
+                            }}
+                            className={styles.carousel}
+                          >
+                            <CarouselContent>
+                              {Array.from({ length: 5 }).map((_, index) => (
+                                <CarouselItem
+                                  key={index}
+                                  className={`${styles.carousel__item} ${index === 3 && styles.selected__item}`}
+                                >
+                                  <div className="p-4">
+                                    Hello
+                                  </div>
+                                </CarouselItem>
+                              ))}
+                            </CarouselContent>
+                            <CarouselPrevious />
+                            <CarouselNext />
+                          </Carousel>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {formType == "FORM_FOUR" && (
               <div
                 className={`${styles.container} ${styles.userDetails__container}`}
               >
@@ -1276,7 +1531,7 @@ const BookingDetailsDialogComponent = ({
                 </div>
               </div>
             )}
-            {formType === "FORM_FOUR" && (
+            {formType === "FORM_FIVE" && (
               <div
                 className={`${styles.container} ${styles.dateTime__container}`}
                 style={{ width: "50%" }}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Popover } from 'antd';
 
 import Tooltip from "@mui/material/Tooltip";
 import StarIcon from "@mui/icons-material/Star";
@@ -20,6 +21,9 @@ import { motion } from "framer-motion";
 
 import { NavigationDots } from "..";
 import styles from "./packages-card.module.scss";
+import { onAuthStateChanged } from "firebase/auth";
+import { firebaseAuth } from "@/lib/db/firebase";
+import { useAppSelector } from "@/lib/hooks/use-redux-store";
 
 type Props = {
   card: any;
@@ -32,6 +36,9 @@ const PackagesCardSubComponent = ({ card }: Props) => {
   });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false); // State to track if the package is a favorite
+  const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean>(false); //user login status
+
+  const userInfoStore = useAppSelector((state) => state.userInfo);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -42,6 +49,24 @@ const PackagesCardSubComponent = ({ card }: Props) => {
 
     return () => clearInterval(intervalId);
   }, [card.hallImages]);
+
+  //check user login status
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (currentUser) => {
+      try {
+        if (currentUser) {
+          setIsUserLoggedIn(true);
+        } else {
+          setIsUserLoggedIn(false);
+        }
+      } catch (error: any) {
+        console.error(error.message);
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [userInfoStore.userAuthStateChangeFlag]);
 
   useEffect(() => {
     // Check if the package is already marked as favorite in local storage on component mount
@@ -82,6 +107,18 @@ const PackagesCardSubComponent = ({ card }: Props) => {
     },
   };
 
+  const tagListContent = (
+    <ol>
+      <li>Outdoor facility</li>
+      <li>Garden facility</li>
+      <li>Pool side</li>
+      <li>Accessibility Options (Wheelchair access, lifts)</li>
+      <li>CCTV Surveillance</li>
+      <li>First Aid Availability</li>
+      <li>Customizable Setup (Seating arrangement, Mandap)</li>
+    </ol>
+  );
+
   return (
     <div className={styles.packagesCardBox__wrapper}>
       {/* Favorite heart icon */}
@@ -96,6 +133,9 @@ const PackagesCardSubComponent = ({ card }: Props) => {
         </Tooltip>
       </div>
       <div className={styles.image__wrapper}>
+        {
+          card.hallImages &&
+
         <Carousel
           responsive={responsive}
           dotListClass="custom-dot-list-style"
@@ -114,6 +154,7 @@ const PackagesCardSubComponent = ({ card }: Props) => {
             <img src={image} key={index} alt="Img" />
           ))}
         </Carousel>
+        }
         <div className={styles.image__contents}>
           <div className={styles.header}>
             <div className={styles.wrapper}>
@@ -197,31 +238,51 @@ const PackagesCardSubComponent = ({ card }: Props) => {
           <div className={styles.tag}>
             <p>Freez: {card.hallFreezDay}</p>
           </div>
-          {/* <div className="link">
-                  <p>+3 more</p>
-                </div> */}
+          <Popover content={tagListContent} title="Features">
+            <div className={styles.link}>
+              <p>+3 more</p>
+            </div>
+          </Popover>
         </div>
         <div className={styles.availability__statustag}>
-          <div
-            className={`${styles['availability-tag']} ${
-              card.availability === "LIMITED AVAILABILITY"
-                ? styles.LIMITED_AVAILABILITY
-                : styles[card.availability]
-            }`}
-          >
-            <span className={styles['left-cut']}></span>
-            <div className={styles.status}>
-              {card.availability}
-              <Tooltip
-                title="This Hall is not available on this date. Kindly Change the Date or Choose a different hall"
-                placement="top"
-                arrow
+          {
+            isUserLoggedIn ? 
+              <div
+                className={`${styles['availability-tag']} ${
+                  card.availability === "LIMITED AVAILABILITY"
+                    ? styles.LIMITED_AVAILABILITY
+                    : styles[card.availability]
+                }`}
               >
-                <AccessAlarmIcon className={styles.icon} />
-              </Tooltip>
-            </div>
-            <span className={styles['right-cut']}></span>
-          </div>
+                <span className={styles['left-cut']}></span>
+                <div className={styles.status}>
+                  {card.availability}
+                  <Tooltip
+                    title="This Hall is not available on this date. Kindly Change the Date or Choose a different hall"
+                    placement="top"
+                    arrow
+                  >
+                    <AccessAlarmIcon className={styles.icon} />
+                  </Tooltip>
+                </div>
+                <span className={styles['right-cut']}></span>
+              </div>
+            :
+              <div className={`${styles['availability-tag']} ${styles.DISABLED}`}>
+                <span className={styles['left-cut']}></span>
+                <div className={styles.status}>
+                  {"Login to view"}
+                  <Tooltip
+                    title="Please Login or Register to view the availability status of this hall."
+                    placement="top"
+                    arrow
+                  >
+                    <AccessAlarmIcon className={styles.icon} />
+                  </Tooltip>
+                </div>
+                <span className={styles['right-cut']}></span>
+              </div>
+          }
         </div>
         <div className={`${styles.wrapper} ${styles.wrapper_2}`}>
           <div className={styles.sub__wrapper}>

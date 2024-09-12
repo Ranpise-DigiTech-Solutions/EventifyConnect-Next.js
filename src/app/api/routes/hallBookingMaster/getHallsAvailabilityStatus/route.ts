@@ -28,6 +28,10 @@ export async function GET(req: NextRequest) {
   const filter = searchParams.get("filter") || "";
   const captchaToken = req.headers.get("X-Captcha-Token");
 
+  const page = parseInt(searchParams.get("page") || "0");
+  const limit = parseInt(searchParams.get("limit") || "0");
+  const skip = page * limit;
+
   if (!captchaToken) {
     return new Response(JSON.stringify({ message: "Missing captcha token!" }), {
       status: 401,
@@ -95,15 +99,42 @@ export async function GET(req: NextRequest) {
             : { $exists: true },
         },
       },
+      {
+        $facet: {
+          hallData: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $project: {
+                _id: 1,
+                hallName: 1,
+                hallTaluk: 1,
+                hallCity: 1,
+                hallState: 1,
+                hallImages: 1,
+                hallDescription: 1,
+                hallVegRate: 1,
+                hallNonVegRate: 1,
+                hallCapacity: 1,
+                hallRooms: 1,
+                hallParking: 1,
+                hallFreezDay: 1,
+                hallUserRating: 1,
+              }
+            }
+          ],
+          total: [{ $count: "count" }],
+        },
+      },
     ];
 
     if (sortCriteria) {
       allHallsPipeline.push({ $sort: sortCriteria });
     }
 
-    const allHalls: Array<Object> = await hallMaster.aggregate(
-      allHallsPipeline
-    );
+    const allHalls: Array<any> = await hallMaster.aggregate(allHallsPipeline);
+
+    console.log(allHalls);
 
     // Find bookings for the given date
     const startDate = new Date(selectedDate + "T00:00:00.000Z");
@@ -115,6 +146,8 @@ export async function GET(req: NextRequest) {
     const endDateUTC = new Date(
       endDate.getTime() + endDate.getTimezoneOffset() * 60000
     ).toISOString();
+
+    const hallIds = allHalls[0].hallData?.map((hall: any) => hall?._id);
 
     const bookings = await hallBookingMaster.aggregate([
       {
@@ -135,6 +168,7 @@ export async function GET(req: NextRequest) {
           ],
           hallCity: selectedCity ? selectedCity : { $exists: true },
           eventId: eventObjectId ? eventObjectId : { $exists: true },
+          hallId: { $in: hallIds },
         },
       },
       {
@@ -214,10 +248,12 @@ export async function GET(req: NextRequest) {
       },
     ]);
 
+    console.log(bookings, hallIds);
+
     // Group bookings by hall
     let bookingsByHall: Array<any> = [];
 
-    if (bookings && bookings.length !== 0) {
+    if (bookings && bookings?.length !== 0) {
       bookings.forEach((booking: any) => {
         bookingsByHall[booking.hallId] = booking;
       });
@@ -226,7 +262,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Calculate availability status for each hall
-    const hallAvailability = allHalls.map((hall: any) => {
+    const hallAvailability = allHalls[0].hallData?.map((hall: any) => {
       const isHallAvailable = !bookingsByHall[hall._id]; //check if the hall is booked atleast once
       const checkAvailability = () => {
         const hallBookingDetails = bookingsByHall[hall._id];
@@ -241,7 +277,9 @@ export async function GET(req: NextRequest) {
         hallId: hall._id,
         hallName: hall.hallName,
         availability: availabilityStatus,
+        hallTaluk: hall.hallTaluk,
         hallCity: hall.hallCity,
+        hallState: hall.hallState,
         hallImages: hall.hallImages,
         hallDescription: hall.hallDescription,
         hallVegRate: hall.hallVegRate,
@@ -250,15 +288,21 @@ export async function GET(req: NextRequest) {
         hallRooms: hall.hallRooms,
         hallParking: hall.hallParking,
         hallFreezDay: hall.hallFreezDay,
+        hallUserRating: hall.hallUserRating
       };
     });
 
-    return new Response(JSON.stringify(hallAvailability), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    console.log(hallAvailability)
+
+    return new Response(
+      JSON.stringify({ hallAvailability: hallAvailability, totalCount: allHalls[0]?.total[0]?.count }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   } catch (error) {
-    
+    console.log(error);
     return new Response(JSON.stringify({ error: error }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

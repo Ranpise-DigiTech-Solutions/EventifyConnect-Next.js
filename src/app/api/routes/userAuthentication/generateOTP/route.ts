@@ -95,7 +95,6 @@ export async function POST(req: NextRequest) {
     createdAt: serverTimestamp(),
   });
 
-  console.log("ENTERED")
 
   //send OTP to email
   const response = await axios.post(

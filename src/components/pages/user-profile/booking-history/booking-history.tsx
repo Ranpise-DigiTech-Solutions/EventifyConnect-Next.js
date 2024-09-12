@@ -261,7 +261,6 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
     event.preventDefault();
 
     if (!selectedBooking || !executeRecaptcha || !bookingCancelDialogFormRef.current) {
-      console.log("ENTERED ")
       return;
     }
 
@@ -397,7 +396,6 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
       handleMoreVertIconClose(); // Close menu after action
       setReloadData(!reloadData);
     } catch (error) {
-      console.log(error);
       setIsPageLoading(false);
       handleMoreVertIconClose(); // Close menu after action
       setAlertDialog(true);

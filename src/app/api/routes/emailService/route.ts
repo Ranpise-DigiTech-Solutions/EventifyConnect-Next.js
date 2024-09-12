@@ -71,7 +71,6 @@ export async function POST(req: NextRequest) {
   });
 
   try {
-    console.log("ENTERED_2")
     // Send mail with defined transport object
     let info = await transporter.sendMail({
       from: from,
