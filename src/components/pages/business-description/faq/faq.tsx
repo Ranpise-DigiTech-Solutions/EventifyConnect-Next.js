@@ -37,7 +37,7 @@ const FAQComponent = ({ questions = defaultQuestions }: Props) => {
                 onClick={() => toggleAccordion(index)}
               >
                 <span className={styles['accordion-title']}>{item.question}</span>
-                <span className={styles.icon} aria-hidden="true"></span>
+                <span className={styles.icon} ></span>
               </button>
               {activeIndex === index && (
                 <div className={styles['accordion-content']}>

@@ -1,11 +1,14 @@
-import React from 'react'
+import { Footer, Navbar } from "@/components/global";
+import React from "react";
 
-const PrivacyPolicyLayout = ({ children } : { children: React.ReactNode }) => {
+const PrivacyPolicyLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <main className='h-screen'>
-        {children}
+    <main className="min-h-screen">
+      <Navbar />
+      {children}
+      <Footer />
     </main>
-  )
-}
+  );
+};
 
-export default PrivacyPolicyLayout
+export default PrivacyPolicyLayout;

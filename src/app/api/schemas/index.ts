@@ -7,3 +7,4 @@ export { default as vendorTypes } from './vendor-types';
 export { default as venueTypes } from './venue-types';
 export { default as vendorMaster } from './vendor-master';
 export { default as serviceProviderMaster } from './service-provider-master';
+export { default as photographerMaster } from './photographer-master';

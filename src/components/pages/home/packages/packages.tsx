@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "antd";
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useSelector } from "react-redux";
@@ -10,7 +11,9 @@ import Link from "next/link";
 import { RootState } from "@/redux/store";
 import styles from "./packages.module.scss";
 import { PackagesCard } from "@/components/sub-components";
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import { PackagesCardDataType } from "@/lib/types";
+import { SortCardsBasedOnAvailability } from "@/lib/utils/functions";
 
 type Props = {};
 
@@ -20,13 +23,13 @@ const PackagesComponent = (props: Props) => {
   const [animateCard, setAnimateCard] = useState({ y: 0, opacity: 1 }); // Card Animation when clicked on TAGS
   const [filteredCards, setFilteredCards] = useState<Array<any>>([]); // Filtering cards based on the TAGS..Ex: Most Popular, Top Rated etc..
 
-  const [pageNo, setPageNo] = useState<number>(0); // current page no.
-  const [cardCount, setCardCount] = useState<number>(6);
+  const cardsPerPage = 6;
+  const [totalCardCount, setTotalCardCount] = useState<number>(0); // set it according to data fetched from database
   const [totalPages, setTotalPages] = useState<number>(0); // set it according to data fetched from database
+  const [isLoading, setIsLoading] = useState<boolean>(true); // set it according to data fetched from database
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
 
   const searchBoxFilterStore = useSelector(
     (state: RootState) => state.searchBoxFilter
@@ -40,55 +43,13 @@ const PackagesComponent = (props: Props) => {
     }
   };
 
-  function mergeSort(arr: Array<any>): Array<any> {
-    if (arr.length <= 1) {
-      return arr;
-    }
-
-    const mid = Math.floor(arr.length / 2);
-    const left = arr.slice(0, mid);
-    const right = arr.slice(mid);
-
-    return merge(mergeSort(left), mergeSort(right));
-  }
-
-  function merge(left: Array<any>, right: Array<any>): Array<any> {
-    let result = [];
-    let leftIndex = 0;
-    let rightIndex = 0;
-
-    while (leftIndex < left.length && rightIndex < right.length) {
-      if (
-        left[leftIndex].availability === "AVAILABLE" &&
-        right[rightIndex].availability !== "AVAILABLE"
-      ) {
-        result.push(left[leftIndex]);
-        leftIndex++;
-      } else if (
-        left[leftIndex].availability !== "AVAILABLE" &&
-        right[rightIndex].availability === "AVAILABLE"
-      ) {
-        result.push(right[rightIndex]);
-        rightIndex++;
-      } else if (
-        left[leftIndex].availability === "LIMITED AVAILABILITY" &&
-        right[rightIndex].availability === "UNAVAILABLE"
-      ) {
-        result.push(left[leftIndex]);
-        leftIndex++;
-      } else {
-        result.push(right[rightIndex]);
-        rightIndex++;
-      }
-    }
-
-    return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
-  }
-
   useEffect(() => {
+    console.log("Entered");
     if (!executeRecaptcha) {
       return;
     }
+
+    // @TODO: rewrite this func
     const getEventId = async () => {
       try {
         if (searchBoxFilterStore.eventType) {
@@ -110,7 +71,8 @@ const PackagesComponent = (props: Props) => {
     };
 
     const fetchData = async () => {
-      const captchaToken = await executeRecaptcha('inquirySubmit');
+      setIsLoading(true);
+      const captchaToken = await executeRecaptcha("inquirySubmit");
       const today = new Date();
       const formattedDate = format(today, "yyyy-MM-dd");
       const eventId = await getEventId();
@@ -119,44 +81,71 @@ const PackagesComponent = (props: Props) => {
         .trim();
       const selectedDate = searchBoxFilterStore.bookingDate;
       try {
-        const hallMasterResponse = await axios.get(
-          `/api/routes/hallBookingMaster/getHallsAvailabilityStatus/`,
-          {
-            params: {
-              selectedCity: selectedCityName ? selectedCityName : "Mangalore",
-              selectedDate: selectedDate ? selectedDate : formattedDate,
-              eventId: eventId,
-              filter: activeFilter,
-              page: pageNo,
-              limit: cardCount,
-            },
-            headers: {
-              "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
-            },
-            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
-          }
-        );
-        
+        let URL = "";
+        let PARAMS: {
+          selectedCity: string;
+          selectedDate?: Date;
+          eventId: string;
+          filter: string;
+          page: number;
+          limit: number;
+        } = {
+          selectedCity: selectedCityName ? selectedCityName : "Mangalore",
+          eventId: eventId,
+          filter: activeFilter,
+          page: currentPage - 1,
+          limit: cardsPerPage,
+        };
 
-        if (activeFilter === "Available") {
-          const filteredCardsBasedOnAvailability = mergeSort(
-            hallMasterResponse.data?.hallAvailability
+        switch (searchBoxFilterStore.vendorType) {
+          case "":
+          case "Banquet Hall":
+            URL = "/api/routes/hallBookingMaster/getHallsAvailabilityStatus/";
+            PARAMS = {
+              ...PARAMS,
+              selectedDate: selectedDate ? selectedDate : formattedDate,
+            };
+            break;
+          case "Photographer":
+            URL = "/api/routes/photographerMaster/getFilteredList/";
+            break;
+          default:
+            return;
+        }
+
+        const response = await axios.get(URL, {
+          params: PARAMS,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Captcha-Token": captchaToken,
+          },
+          withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
+        });
+
+        console.log(response);
+
+        if (
+          searchBoxFilterStore.vendorType === "Banquet Hall" &&
+          activeFilter === "Available"
+        ) {
+          const filteredCardsBasedOnAvailability = SortCardsBasedOnAvailability(
+            response.data?.data
           );
           setFilteredCards(filteredCardsBasedOnAvailability);
+        } else {
+          setFilteredCards(response.data?.data);
         }
-        setFilteredCards(hallMasterResponse.data?.hallAvailability);
-        setTotalPages(
-          hallMasterResponse.data?.totalCount
-        );
-        console.log(hallMasterResponse.data?.totalCount);
+        setTotalCardCount(response.data?.totalCount);
+        setTotalPages(Math.ceil(response.data?.totalCount / cardsPerPage));
+        setIsLoading(false); // To hide the loading spinner
       } catch (error) {
+        setIsLoading(false);
         console.error("Error fetching data:", error);
       }
     };
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchBoxFilterStore, activeFilter, executeRecaptcha]);
+  }, [searchBoxFilterStore, activeFilter, executeRecaptcha, currentPage]);
 
   // To provide the scroll effect when the cards change
   useEffect(() => {
@@ -176,28 +165,109 @@ const PackagesComponent = (props: Props) => {
     }, 500);
   };
 
-  const renderCards = () => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const slicedData = Object.values(filteredCards).slice(startIndex, endIndex);
+  const PackagesCardSkeleton = () => (
+    <div className={styles.skeleton__wrapper}>
+      <div className={styles.image__section}>
+        <Skeleton.Image active={true} className={styles.img} />
+      </div>
+      <div className={styles.node__section}>
+        <div className={styles.header__section}>
+          <Skeleton.Input active={true} size={"default"} />
+          <Skeleton.Input active={true} size={"small"} />
+        </div>
+        <div className={styles.body__section}>
+          <div className={styles.wrapper__1}>
+            <Skeleton.Input
+              active={true}
+              size={"default"}
+              className={styles.input}
+            />
+            <Skeleton.Input
+              active={true}
+              size={"default"}
+              className={styles.input}
+            />
+          </div>
+          <div className={styles.wrapper__2}>
+            <Skeleton.Input
+              active={true}
+              size={"small"}
+              className={styles.availabilityInput}
+              style={{ alignSelf: "center" }}
+            />
+          </div>
+        </div>
+        <div className={styles.footer__section}>
+          <Skeleton.Input active={true} size={"default"} />
+          <Skeleton.Input active={true} size={"default"} />
+        </div>
+      </div>
+    </div>
+  );
 
-    if (!slicedData.length) {
+  const renderCards = () => {
+    if (!filteredCards.length) {
       return null;
     }
 
-    return slicedData.map((card: any, index) => (
-      <div className={styles.card} key={index}>
-        <Link
-          href={{
-            pathname: "/hall-description",
-            search: `?hallId=${card.hallId}`,
-          }}
-          target="_blank"
-        >
-          <PackagesCard card={card} />
-        </Link>
-      </div>
-    ));
+    switch (searchBoxFilterStore.vendorType) {
+      case "":
+      case "Banquet Hall":
+        return filteredCards.map((card: PackagesCardDataType, index) => (
+          <div className={styles.card} key={index}>
+            <Link
+              href={{
+                pathname: "/hall-description",
+                search: `?hallId=${card.hallId}`,
+              }}
+              target="_blank"
+            >
+              <PackagesCard
+                card={{
+                  _id: card.hallId || '',
+                  vendorImages: card.hallImages || [],
+                  vendorDescription: card.hallDescription || "",
+                  companyName: card.hallName || "",
+                  companyCity: card.hallCity || "",
+                  hallVegRate: card.hallVegRate,
+                  hallNonVegRate: card.hallNonVegRate,
+                  hallCapacity: card.hallCapacity,
+                  hallRooms: card.hallRooms,
+                  hallParking: card.hallParking,
+                  hallFreezDay: card.hallFreezDay,
+                  availability: card.availability,
+                }}
+                vendorType={searchBoxFilterStore.vendorType}
+              />
+            </Link>
+          </div>
+        ));
+      case "Photographer":
+        return filteredCards.map((card: PackagesCardDataType, index) => (
+          <div className={styles.card} key={index}>
+            <div
+              // href={{
+              //   pathname: "/photographer-description",
+              //   search: `?photographerId=${card._id}`,
+              // }}
+              // target="_blank"
+            >
+              <PackagesCard
+                card={{
+                  _id: card._id,
+                  vendorImages: card.vendorImages || [],
+                  vendorDescription: card.vendorDescription || "",
+                  companyName: card.companyName || "",
+                  companyCity: card.companyCity || "",
+                }}
+                vendorType={searchBoxFilterStore.vendorType}
+              />
+            </div>
+          </div>
+        ));
+      default:
+        return;
+    }
   };
 
   const renderPageNumbers = () => {
@@ -321,17 +391,15 @@ const PackagesComponent = (props: Props) => {
         animate={animateCard}
         transition={{ duration: 0.5, delayChildren: 0.5 }}
       >
-        {filteredCards.length === 0 ? (
-          <div className={styles["altImg-container"]}>
-            <img src={"/images/NoResults.png"} alt="no-results" />
-          </div>
-        ) : (
-          renderCards() || (
-            <div className={styles["altImg-container"]}>
-              <img src={"/images/loading.png"} alt="" />
-            </div>
-          )
-        )}
+        {isLoading
+          ? Array(6)
+              .fill("a")
+              .map((_, index) => <PackagesCardSkeleton key={index} />)
+          : renderCards() || (
+              <div className={styles["altImg-container"]}>
+                <img src={"/images/NoResults.png"} alt="no-results" />
+              </div>
+            )}
       </motion.div>
       <div className={styles.packagecount__wrapper}>
         <div className={styles.counter} onClick={() => handlePageChange(1)}>

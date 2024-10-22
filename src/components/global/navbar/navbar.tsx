@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import { usePathname } from 'next/navigation';
+import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks/use-redux-store";
 import Link from "next/link";
@@ -40,12 +40,13 @@ import { firebaseAuth } from "@/lib/db/firebase";
 import { setUserInfoData } from "@/redux/slices/user-info";
 import axios from "axios";
 import { RootState } from "@/redux/store";
-import styles from './navbar.module.scss';
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+import styles from "./navbar.module.scss";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import PhotographerRegistrationForm from "../photographer-registration-form/photographer-registration-form";
 // import { SignedIn, SignedOut, UserButton} from "@clerk/clerk-react";
 
 type Props = {
-  setIsLoading: (isLoading: boolean) => void;
+  setIsLoading?: (isLoading: boolean) => void;
 };
 
 const NavbarComponent = ({ setIsLoading }: Props) => {
@@ -54,10 +55,12 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
   const routeName =
     pathname === "/" ? "HOME" : pathname.split("/").filter(Boolean).pop();
 
+  const userInfo = useAppSelector((state: RootState) => state.userInfo); // details of registered user.
+
   const [scrolled, setScrolled] = useState(false);
   const [isSignInDialogOpen, setSignInDialogOpen] = useState(false);
   const [isRegistrationDialogOpen, setIsRegistrationDialogOpen] =
-    useState(false);
+    useState<boolean>(false);
   const [
     isWalkInCustomerBookingDialogOpen,
     setIsWalkInCustomerBookingDialogOpen,
@@ -91,7 +94,7 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
     setIsRegistrationDialogOpen(true);
   };
 
-  const handleRegistrationDialogClose = () => {
+  const handleRegistrationDialogClose : () => void = () => {
     setIsRegistrationDialogOpen(false);
   };
   // Function to toggle the mobile menu
@@ -100,7 +103,6 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
   };
   // Function to handle menu item clicks
   const handleMenuItemClick = (componentKey: string) => {
-    
     // Add any additional functionality you need
   };
   const handleWalkInCustomerBookingDialogClose = () => {
@@ -116,7 +118,6 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
       await firebaseAuth.signOut(); // Sign out the current user
       dispatch(setUserInfoData({ key: "userDetails", value: {} }));
       setUser(null);
-      
     } catch (error: any) {
       // Handle Error condition
       console.error("Error logging out:", error.message);
@@ -124,82 +125,91 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
   };
 
   useEffect(() => {
-    if(!executeRecaptcha) {
+    if (!executeRecaptcha) {
       return;
     }
-    const unsubscribe = onAuthStateChanged(firebaseAuth, async (currentUser) => {
-      if (currentUser) {
-        
-        setUser(currentUser);
-        // setIsLoading(true);
-        
-        const getUserData = async () => {
-          try {
-            const captchaToken = await executeRecaptcha('inquirySubmit');
-            const response = await axios.get(
-              `/api/routes/userAuthentication/${currentUser.uid}`, {
-                headers: {
-                  'Content-Type': 'application/json',
-                  'X-Captcha-Token': captchaToken,
-                },
-                withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
-              }
-            );
-            dispatch(
-              setUserInfoData({ key: "userDetails", value: response.data })
-            );
-          } catch (error: any) {
-            console.error("Error fetching user data:", error.message);
-          } finally {
-            // setIsLoading(false);
-          }
-        };
-        
-        getUserData();
-      } else {
-        // No user is signed in
-        setUser(null);
+    const unsubscribe = onAuthStateChanged(
+      firebaseAuth,
+      async (currentUser) => {
+        if (currentUser) {
+          setUser(currentUser);
+          // setIsLoading(true);
+
+          const getUserData = async () => {
+            try {
+              const captchaToken = await executeRecaptcha("inquirySubmit");
+              const response = await axios.get(
+                `/api/routes/userAuthentication/${currentUser.uid}`,
+                {
+                  headers: {
+                    "Content-Type": "application/json",
+                    "X-Captcha-Token": captchaToken,
+                  },
+                  withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
+                }
+              );
+              dispatch(
+                setUserInfoData({ key: "userDetails", value: response.data })
+              );
+            } catch (error: any) {
+              console.error("Error fetching user data:", error.message);
+            } finally {
+              // setIsLoading(false);
+            }
+          };
+
+          getUserData();
+        } else {
+          // No user is signed in
+          setUser(null);
+        }
       }
-    });
+    );
 
     return () => unsubscribe();
   }, [dispatch, userInfoStore.userAuthStateChangeFlag, executeRecaptcha]); // dependency array => [userAuthStateChangeFlag]
 
   // get hall data
   useEffect(() => {
-    if (routeName === "HOME" || userInfoStore.userDetails.vendorType !== "Banquet Hall" || !executeRecaptcha) {
+    if (
+      routeName === "HOME" ||
+      userInfoStore.userDetails.vendorType !== "Banquet Hall" ||
+      !executeRecaptcha
+    ) {
       return;
     }
 
     try {
       const getServiceProviderData = async (hallData: any) => {
-        const captchaToken = await executeRecaptcha('inquirySubmit');
+        const captchaToken = await executeRecaptcha("inquirySubmit");
         const response = await axios.get(
-          `/api/routes/serviceProviderMaster/?serviceProviderId=${hallData.hallUserId}`, {
+          `/api/routes/serviceProviderMaster/?serviceProviderId=${hallData.hallUserId}`,
+          {
             headers: {
-              'Content-Type': 'application/json',
-              'X-Captcha-Token': captchaToken,
+              "Content-Type": "application/json",
+              "X-Captcha-Token": captchaToken,
             },
-            withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
         );
         setServiceProviderData(response.data[0]);
       };
 
       const getHallData = async () => {
-        const captchaToken = await executeRecaptcha('inquirySubmit');
+        const captchaToken = await executeRecaptcha("inquirySubmit");
         const response = await axios.get(
-          `/api/routes/hallMaster/getHallByUserId/?userId=${userInfoStore.userDetails.Document._id}`, {
+          `/api/routes/hallMaster/getHallByUserId/?userId=${userInfoStore.userDetails.Document._id}`,
+          {
             headers: {
-              'Content-Type': 'application/json',
-              'X-Captcha-Token': captchaToken,
+              "Content-Type": "application/json",
+              "X-Captcha-Token": captchaToken,
             },
-            withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+            withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
         );
         setHallData(response.data[0]);
         getServiceProviderData(response.data[0]);
-        setIsLoading(false);
+        setIsLoading && setIsLoading(false);
       };
 
       if (userInfoStore.userDetails.Document !== undefined) {
@@ -207,7 +217,7 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
       }
     } catch (error) {
       console.error(error);
-      setIsLoading(false);
+      setIsLoading && setIsLoading(false);
     }
   }, [user, userInfoStore.userDetails, executeRecaptcha]);
 
@@ -238,9 +248,37 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
 
   const isMobile = useMediaQuery("(max-width:768px)");
 
+  const renderRegistrationForm = () => {
+    switch (userInfo.userDetails.vendorType) {
+      case "Photographer" : return (
+        <div className={styles.userRegistrationDialog}>
+          <PhotographerRegistrationForm 
+            open={isRegistrationDialogOpen}
+            handleClose={handleRegistrationDialogClose}
+          />
+        </div>
+      )
+      default:
+        return (
+          <div className={styles.userRegistrationDialog}>
+            <UserRegistrationForm
+              open={isRegistrationDialogOpen}
+              handleClose={handleRegistrationDialogClose}
+              // userType={"VENDOR"}
+              // vendorType={"Banquet Hall"}
+            />
+          </div>
+        );
+    }
+  };
+
   return (
     <div className={styles.navbar__container}>
-      <div className={`${styles.navbar__wrapper} ${scrolled ? styles.scrolled : ""}`}>
+      <div
+        className={`${styles.navbar__wrapper} ${
+          scrolled ? styles.scrolled : ""
+        }`}
+      >
         <div className={styles.logo__wrapper}>
           <Image
             src={"/images/logo.png"}
@@ -345,7 +383,10 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
                           <p className={styles.listItemText}>Home</p>
                         </ListItemButton>
                       </ListItem>
-                      <Link href="/user-profile" className={styles['profile-link']}>
+                      <Link
+                        href="/user-profile"
+                        className={styles["profile-link"]}
+                      >
                         <ListItem key={"Account"} disablePadding>
                           <ListItemButton>
                             <ListItemIcon>
@@ -373,12 +414,17 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
                                   className={styles.icon}
                                 />
                               </ListItemIcon>
-                              <p className={styles.listItemText}>Walk-In Booking</p>
+                              <p className={styles.listItemText}>
+                                Walk-In Booking
+                              </p>
                             </ListItemButton>
                           </ListItem>
                         )}
                     </List>
-                    <List className={styles.list__wrapper} sx={{ width: "100%" }}>
+                    <List
+                      className={styles.list__wrapper}
+                      sx={{ width: "100%" }}
+                    >
                       <Divider
                         className={styles.divider}
                         sx={{
@@ -570,10 +616,10 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
                     </MenuItem>
                   </Link>
                   <Divider />
-                  <Link href="/user-profile" className={styles['profile-link']}>
+                  <Link href="/user-profile" className={styles["profile-link"]}>
                     <MenuItem>
                       <ListItemIcon>
-                        <div className={styles['avatar-wrapper']}>
+                        <div className={styles["avatar-wrapper"]}>
                           <Avatar sx={{ width: 56, height: 56 }} />
                         </div>
                       </ListItemIcon>
@@ -645,16 +691,7 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
           />
         </div>
       )}
-      {isRegistrationDialogOpen && (
-        <div className={styles.userRegistrationDialog}>
-          <UserRegistrationForm
-            open={isRegistrationDialogOpen}
-            handleClose={handleRegistrationDialogClose}
-            // userType={"VENDOR"}
-            // vendorType={"Banquet Hall"}
-          />
-        </div>
-      )}
+      {isRegistrationDialogOpen && renderRegistrationForm()}
       {isWalkInCustomerBookingDialogOpen && (
         <div className={styles.walkInCustomerBookingDialog}>
           <WalkInCustomerBookingDialog

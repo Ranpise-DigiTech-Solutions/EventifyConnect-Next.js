@@ -19,8 +19,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  
-
   let senderEmailId: string | undefined = "";
   let senderEmailPassword: string | undefined = "";
   let from: string | undefined = "";
@@ -61,9 +59,9 @@ export async function POST(req: NextRequest) {
 
   // Replace with your Hostinger SMTP details
   let transporter = nodemailer.createTransport({
-    host: "eventifyconnect.com",
-    port: 587,
-    secure: false, //should not use the implicit SSL/TLS protocol (SMTPS) on a dedicated port (like port 465), but rather start with a plain text connection and then upgrade it to a secure connection using the STARTTLS command
+    host: "srv543385.hstgr.cloud",
+    port: 465,
+    secure: true, //should not use the implicit SSL/TLS protocol (SMTPS) on a dedicated port (like port 465), but rather start with a plain text connection and then upgrade it to a secure connection using the STARTTLS command
     auth: {
       user: senderEmailId,
       pass: senderEmailPassword,
@@ -88,6 +86,7 @@ export async function POST(req: NextRequest) {
       }
     );
   } catch (error) {
+    console.log(error);
     return new Response(
       JSON.stringify({ sent: false, message: "Failed to send a mail!" }),
       {

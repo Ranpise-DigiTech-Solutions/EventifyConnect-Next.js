@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import axios from "axios";
 
 import { Navbar, Footer } from "@/components/global";
@@ -13,9 +13,9 @@ import {
   Testimonials,
   VenueSummary,
   AvailabilityCalendar,
-  AdditionalVendorDetails,
+  AdditionalHallVendorDetails,
   BookingDetailsDialog,
-  HallDescription,
+  VendorDescription,
   AboutHall,
 } from "@/components/pages/business-description";
 import { LoadingScreen } from "@/components/sub-components";
@@ -25,7 +25,6 @@ import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 type Props = {};
 
 const HallDescriptionPage = (props: Props) => {
-  const router = useRouter();
   const { executeRecaptcha } = useGoogleReCaptcha();
     const searchParams = useSearchParams();
   const hallId = searchParams.get("hallId");
@@ -123,12 +122,12 @@ const HallDescriptionPage = (props: Props) => {
         <div className={styles.main__wrapper}>
           <div className={styles.sub__wrapper}>
             <div className={styles.column1}>
-              <HallDescription hallData={hallData} />
+              <VendorDescription vendorType="HALL" vendorData={hallData} />
               <AboutHall />
               <AvailabilityCalendar hallData={hallData} />
             </div>
             <div className={styles.column2}>
-              <AdditionalVendorDetails
+              <AdditionalHallVendorDetails
                 handleBookingDetailsDialogOpen={handleBookingDetailsDialogOpen}
                 hallData={hallData}
               />

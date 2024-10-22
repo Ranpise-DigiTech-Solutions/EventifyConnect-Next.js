@@ -241,6 +241,8 @@ export async function GET(req: NextRequest) {
       },
     ]);
 
+    console.log(bookings);
+
     return new Response(JSON.stringify(bookings), {
       status: 200,
       headers: { "Content-Type": "application/json" },

@@ -138,9 +138,9 @@ export async function GET(
             bookingEndDateTimestamp: 1,
             bookingDuration: 1,
             bookingStatus: 1,
-            catererRequirement: {
-              label: { $cond: { if: "$bookCaterer", then: "Yes", else: "No" } },
-              value: "$bookCaterer",
+            otherVendorRequirement: {
+              label: { $cond: { if: "$otherVendorRequirement", then: "Yes", else: "No" } },
+              value: "$otherVendorRequirement",
             },
             guestsCount: 1,
             roomsCount: 1,
@@ -151,10 +151,6 @@ export async function GET(
               value: "$parkingRequirement",
             },
             vehiclesCount: 1,
-            customerVegRate: 1,
-            customerNonVegRate: 1,
-            customerVegItemsList: 1,
-            customerNonVegItemsList: 1,
             // fields from vendorType collection
             vendorType: "$vendorType.vendorType",
             //fields from eventType collection
@@ -163,6 +159,9 @@ export async function GET(
               label: "$eventType.eventName",
             },
             //fields from hallMaster collection
+            requiredOtherVendors: 1,
+            inHouseVendors: 1,
+            outsidePartyVendors: 1,
             hallData:
               userType === "CUSTOMER"
                 ? {
@@ -418,55 +417,55 @@ export async function PATCH(
     const {bookingStatus, customerEmail, hallMainEmail, documentId, ...info} = updatedFields; 
 
     // send emails
-    if(bookingStatus === "CONFIRMED") {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/emailService/`,
-        {
-          senderType: "INFO_EC",
-          recipientEmailId: customerEmail,
-          bcc: hallMainEmail,
-          subject: "EventifyConnect - OTP Verification",
-          message: `<p>Dear User,</p>
+    // if(bookingStatus === "CONFIRMED") {
+    //   const response = await axios.post(
+    //     `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/emailService/`,
+    //     {
+    //       senderType: "INFO_EC",
+    //       recipientEmailId: customerEmail,
+    //       bcc: hallMainEmail,
+    //       subject: "EventifyConnect - OTP Verification",
+    //       message: `<p>Dear User,</p>
 
-            <p>Thank you for your order with EventifyConnect! We are pleased to confirm that your order has been received and is being processed.</p>
+    //         <p>Thank you for your order with EventifyConnect! We are pleased to confirm that your order has been received and is being processed.</p>
 
-            <p><strong>Order Number:</strong> ${documentId}</p>
+    //         <p><strong>Order Number:</strong> ${documentId}</p>
           
-            <p>Please review your order details in our website. If you have any questions or need to make changes to your order, please contact us at support@eventifyconnect.com.</p>
+    //         <p>Please review your order details in our website. If you have any questions or need to make changes to your order, please contact us at support@eventifyconnect.com.</p>
 
-            <p>Thank you for choosing EventifyConnect. We look forward to serving you!</p>
+    //         <p>Thank you for choosing EventifyConnect. We look forward to serving you!</p>
 
-            <p>Best regards,<br/>
-            EventifyConnect Team</p>
+    //         <p>Best regards,<br/>
+    //         EventifyConnect Team</p>
 
-          `,
-        }
-      );
-    } else if(bookingStatus === "CANCELLED") {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/emailService/`,
-        {
-          senderType: "INFO_EC",
-          recipientEmailId: customerEmail,
-          bcc: hallMainEmail,
-          subject: "EventifyConnect - Booking Information",
-          message: `
-              <p>Dear User,</p>
+    //       `,
+    //     }
+    //   );
+    // } else if(bookingStatus === "CANCELLED") {
+    //   const response = await axios.post(
+    //     `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/emailService/`,
+    //     {
+    //       senderType: "INFO_EC",
+    //       recipientEmailId: customerEmail,
+    //       bcc: hallMainEmail,
+    //       subject: "EventifyConnect - Booking Information",
+    //       message: `
+    //           <p>Dear User,</p>
 
-            <p>We regret to inform you that your order with EventifyConnect has been cancelled.</p>
+    //         <p>We regret to inform you that your order with EventifyConnect has been cancelled.</p>
 
-            <p><strong>Order Number:</strong> ${documentId}</p>
+    //         <p><strong>Order Number:</strong> ${documentId}</p>
 
-            <p>We understand that circumstances may change, and we're here to assist you. If you have any questions or need further assistance regarding this cancellation, please do not hesitate to contact us at support@eventifyconnect.com.</p>
+    //         <p>We understand that circumstances may change, and we're here to assist you. If you have any questions or need further assistance regarding this cancellation, please do not hesitate to contact us at support@eventifyconnect.com.</p>
 
-            <p>Thank you for your understanding. We hope to have the opportunity to serve you in the future.</p>
+    //         <p>Thank you for your understanding. We hope to have the opportunity to serve you in the future.</p>
 
-            <p>Best regards,<br/>
-            EventifyConnect Team</p>
-          `,
-        }
-      );
-    }
+    //         <p>Best regards,<br/>
+    //         EventifyConnect Team</p>
+    //       `,
+    //     }
+    //   );
+    // }
     
     // Update the bookingStatus to 'confirmed' or 'REJECTED' in the bookingMaster table
     const updatedBooking = await bookingMaster.findOneAndUpdate(

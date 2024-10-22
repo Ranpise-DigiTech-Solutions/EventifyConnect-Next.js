@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 // Define types for fields in your Mongoose schema
 interface EventTypes extends Document {
     eventName: string;
+    _id: string;
 }
 
 // Define your schema

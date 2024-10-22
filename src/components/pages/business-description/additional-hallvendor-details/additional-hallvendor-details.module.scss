@@ -1,9 +1,14 @@
-.additionalVendorDetails__container {
+.additionalHallVendorDetails__container {
   width: 100%;
   font-family: var(--font-family-1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 
   .pricingInformation__wrapper {
     width: 100%;
+    flex: 1;
     margin-bottom: 3rem;
 
     .title__wrapper {
@@ -138,6 +143,7 @@
 
   .similarVendors__wrapper {
     width: 100%;
+    flex: 1;
 
     margin-bottom: 2rem;
 
@@ -318,8 +324,8 @@
   }
 
   .advertisement__wrapper {
+    flex: 1;
     width: 100%;
-    height: 15rem;
     margin: 0 0 2rem 0;
     background-color: #36c87f;
     display: flex;
@@ -342,6 +348,7 @@
   }
 
   .availabilityChecker__wrapper {
+    flex: 1;
     width: 100%;
     font-family: var(--font-family-1);
 
@@ -392,7 +399,7 @@
           border-radius: 5px;
           overflow: hidden;
 
-          input {
+          input, .input {
             width: 100%;
             height: 100%;
             padding: 0.5rem;
