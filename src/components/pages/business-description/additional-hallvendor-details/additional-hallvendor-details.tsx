@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks/use-redux-store";
 import { format } from "date-fns";
 
+import Select, { SingleValue } from "react-select";
 import Snackbar from "@mui/material/Snackbar";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
@@ -33,7 +34,7 @@ import { firebaseAuth } from "@/lib/db/firebase";
 import { setBookingInfoData } from "@/redux/slices/booking-info";
 import { onAuthStateChanged } from "firebase/auth";
 import { ContactForm } from "@/components/sub-components";
-import styles from "./additional-vendor-details.module.scss";
+import styles from "./additional-hallvendor-details.module.scss";
 import axios from "axios";
 
 type Props = {
@@ -66,8 +67,6 @@ const AdditionalVendorDetailsComponent = ({
 
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
-
-  console.log(hallData);
 
   function getDayOfWeek(date: Date): string {
     const daysOfWeek = [
@@ -117,6 +116,32 @@ const AdditionalVendorDetailsComponent = ({
 
     setIsMessageSent(false);
   };
+  
+  const customStyles = {
+    control: (provided: any, state: any) => ({
+      ...provided,
+      border: "none",
+      padding: 0,
+      margin: 0,
+      cursor: "pointer",
+      boxShadow: state.isFocused ? "none" : provided.boxShadow,
+    }),
+    indicatorSeparator: () => ({
+      display: "none",
+    }),
+    dropdownIndicator: (provided: any) => ({
+      ...provided,
+      "& svg": {
+        display: "none", // Hide the default arrow icon
+      },
+      padding: 10,
+    }),
+    placeholder: (provided: any) => ({
+      ...provided,
+      color: "#999999", // Change the placeholder color here
+    }),
+  };
+
 
   useEffect(() => {
     if (!executeRecaptcha) {
@@ -146,7 +171,7 @@ const AdditionalVendorDetailsComponent = ({
           withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
         }
       );
-      setSimilarVendorsData(hallMasterResponse.data?.hallAvailability);
+      setSimilarVendorsData(hallMasterResponse.data?.data);
       setTotalPages(Math.ceil(hallMasterResponse.data?.totalPages / 3));
       // @TODO:Error Handling
     };
@@ -327,7 +352,7 @@ const AdditionalVendorDetailsComponent = ({
   };
 
   return (
-    <div className={styles.additionalVendorDetails__container}>
+    <div className={styles.additionalHallVendorDetails__container}>
       {/* SnackBar */}
       <Snackbar
         open={isMessageSent}
@@ -567,6 +592,26 @@ const AdditionalVendorDetailsComponent = ({
                 value={bookingInfoStore.endTime ? bookingInfoStore.endTime : ""}
                 placeholder="dd/mm/yyyy"
                 onChange={handleBookingEndTimeChange}
+              />
+            </div>
+          </div>
+          <div className={styles.wrapper}>
+            <p className={styles.inputTitle}>Booking Slot</p>
+            <div className={styles.input}>
+            <Select
+                styles={customStyles}
+                options={
+                  [{value: "morning", label: "Morning Slot (6:00 AM - 12:00 PM)"}, {value: "evening", label: "Evening Slot (1:00 AM - 11:00 PM)"}]
+                }
+                value={{value: "morning", label: "Morning Slot (6:00 AM - 12:00 PM)"}}
+                placeholder="Choose a slot"
+                components={{
+                  DropdownIndicator: () => <KeyboardArrowDownIcon />,
+                }}
+                // menuShouldScrollIntoView={false}
+                closeMenuOnSelect
+                isSearchable
+                className="input"
               />
             </div>
           </div>

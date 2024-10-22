@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -5,13 +6,22 @@ import React, { useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/hooks/use-redux-store";
 import axios from "axios";
 import Select, { SingleValue } from "react-select";
-import { Flex, Switch, Table, Tag, Transfer } from "antd";
-import type {
+import {
+  Flex,
+  Switch,
+  Table,
+  Tag,
+  Transfer,
   GetProp,
   TableColumnsType,
   TableProps,
   TransferProps,
 } from "antd";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 import Dialog from "@mui/material/Dialog";
 import Button from "@mui/material/Button";
@@ -20,6 +30,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import PersonIcon from "@mui/icons-material/Person";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import BusinessIcon from "@mui/icons-material/Business";
@@ -30,20 +41,26 @@ import LocalParkingIcon from "@mui/icons-material/LocalParking";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import RestaurantMenuIcon from "@mui/icons-material/RestaurantMenu";
+import CloseIcon from "@mui/icons-material/Close";
 import EmailIcon from "@mui/icons-material/Email";
 import MessageIcon from "@mui/icons-material/Message";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import AccessAlarmIcon from "@mui/icons-material/AccessAlarm";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import ErrorIcon from "@mui/icons-material/Error";
-import { FaLandmark, FaCar } from "react-icons/fa";
+import { FaLandmark, FaCar, FaEdit } from "react-icons/fa";
 import { GiSandsOfTime } from "react-icons/gi";
+import MoveUpIcon from "@mui/icons-material/MoveUp";
+import MoreVertOutlinedIcon from "@mui/icons-material/MoreVertOutlined";
 
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { LoadingScreen } from "@/components/sub-components";
 import styles from "./booking-details-dialog.module.scss";
 import { RootState } from "@/redux/store";
-import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
+import { photographerBookingDetails } from "@/app/api/schemas/booking-master";
+import { FilteredSearchComponent } from "@/components/global";
+import { FilteredSearchComponentFiltersType } from "@/lib/types";
+import Image from "next/image";
 
 type Props = {
   open: boolean;
@@ -156,23 +173,99 @@ interface bookingDetailsType {
   expectedNonVegRate: number | null;
   vegMenu: string;
   nonVegMenu: string;
-  catererRequirement: {
+  otherVendorRequirement: {
     label: string;
     value: boolean;
   } | null;
   customerSuggestion: string;
+  requiredOtherVendors: string[];
+  inHouseVendors: string[];
+  outsidePartyVendors: {
+    [key: string]: photographerBookingDetails;
+  };
 }
 
 interface bookingDetailsErrorInfoType
   extends Omit<
     bookingDetailsType,
-    "eventTypeInfo" | "guestsCount" | "roomsCount" | "vehiclesCount"
+    | "eventTypeInfo"
+    | "guestsCount"
+    | "roomsCount"
+    | "vehiclesCount"
+    | "outsidePartyVendors"
   > {
   eventTypeInfo: string;
   guestsCount: string;
   roomsCount: string;
   vehiclesCount: string;
+  outsidePartyVendors: string;
 }
+
+const ReactSelectBooleanOptions: ReactSelectBooleanOptionType[] = [
+  {
+    value: true,
+    label: "Yes",
+  },
+  {
+    value: false,
+    label: "No",
+  },
+];
+
+const customStyles = {
+  control: (provided: any, state: any) => ({
+    ...provided,
+    fontSize: "15px",
+    minHeight: "32px",
+    padding: 0,
+    margin: 0,
+    cursor: "pointer",
+    border: "none",
+    outline: "none",
+    boxShadow: state.isFocused ? "none" : provided.boxShadow,
+  }),
+  indicatorSeparator: () => ({
+    display: "none",
+  }),
+  dropdownIndicator: (provided: any) => ({
+    ...provided,
+    "& svg": {
+      display: "none", // Hide the default arrow icon
+    },
+    padding: 10,
+  }),
+  placeholder: (provided: any) => ({
+    ...provided,
+    color: "#999999", // Change the placeholder color here
+  }),
+};
+
+const bookingDetailsTemplate = {
+  bookingId: "",
+  eventTypeInfo: {
+    eventType: "",
+    eventTypeId: "",
+  },
+  guestsCount: null,
+  roomsCount: null,
+  parkingRequirement: {
+    label: "Yes",
+    value: true,
+  },
+  vehiclesCount: null,
+  expectedVegRate: null,
+  expectedNonVegRate: null,
+  vegMenu: "",
+  nonVegMenu: "",
+  otherVendorRequirement: {
+    label: "Yes",
+    value: true,
+  },
+  customerSuggestion: "",
+  requiredOtherVendors: [],
+  inHouseVendors: [],
+  outsidePartyVendors: {},
+};
 
 const BookingDetailsDialogComponent = ({
   open,
@@ -197,6 +290,22 @@ const BookingDetailsDialogComponent = ({
   const [bookingConfirmationScreen, setBookingConfirmationScreen] =
     useState(false); // toggle booking confirmation screen
   const [alertDialog, setAlertDialog] = useState(false); // to show error messages
+  const [openFilteredSearchComponent, setOpenFilteredSearchComponent] =
+    useState<boolean>(false); // to trigger the filtered search component
+
+  const [filteredSearchComponentFilters, setFilteredSearchComponentFilters] =
+    useState<FilteredSearchComponentFiltersType>({
+      cityName: "",
+      date: "",
+      eventType: {
+        label: "",
+        value: "",
+      },
+      vendorType: {
+        label: "",
+        value: "",
+      },
+    });
 
   // *** START OF VENDOR-TRANSFER-LIST RELATED VARIABLES ***
 
@@ -250,8 +359,8 @@ const BookingDetailsDialogComponent = ({
 
   const [
     otherVendorTransferListTargetKeys,
-    setOtherVendorTransferListTTargetKeys,
-  ] = useState<TransferProps["targetKeys"]>([]);
+    setOtherVendorTransferListTargetKeys,
+  ] = useState<string[]>([]);
   const [
     otherVendorTransferListFieldDisabled,
     setOtherVendorTransferListFieldDisabled,
@@ -259,91 +368,162 @@ const BookingDetailsDialogComponent = ({
 
   const otherVendorTransferListOnChange: OtherVendorsTableTransferProps["onChange"] =
     (nextTargetKeys) => {
-      setOtherVendorTransferListTTargetKeys(nextTargetKeys);
+      setOtherVendorTransferListTargetKeys(nextTargetKeys as string[]);
     };
 
   const otherVendorTransferListToggleDisabled = (checked: boolean) => {
     setOtherVendorTransferListFieldDisabled(checked);
   };
+
   // *** END OF VENDOR-TRANSFER-LIST RELATED VARIABLES ***
 
-  console.log(otherVendorTransferListTargetKeys);
-
-  const ReactSelectBooleanOptions: ReactSelectBooleanOptionType[] = [
-    {
-      value: true,
-      label: "Yes",
-    },
-    {
-      value: false,
-      label: "No",
-    },
-  ];
-
-  const customStyles = {
-    control: (provided: any, state: any) => ({
-      ...provided,
-      fontSize: "15px",
-      minHeight: "32px",
-      padding: 0,
-      margin: 0,
-      cursor: "pointer",
-      border: "none",
-      outline: "none",
-      boxShadow: state.isFocused ? "none" : provided.boxShadow,
-    }),
-    indicatorSeparator: () => ({
-      display: "none",
-    }),
-    dropdownIndicator: (provided: any) => ({
-      ...provided,
-      "& svg": {
-        display: "none", // Hide the default arrow icon
-      },
-      padding: 10,
-    }),
-    placeholder: (provided: any) => ({
-      ...provided,
-      color: "#999999", // Change the placeholder color here
-    }),
-  };
-
-  const bookingDetailsTemplate = {
-    bookingId: "",
-    eventTypeInfo: {
-      eventType: "",
-      eventTypeId: "",
-    },
-    guestsCount: null,
-    roomsCount: null,
-    parkingRequirement: {
-      label: "Yes",
-      value: true,
-    },
-    vehiclesCount: null,
-    expectedVegRate: null,
-    expectedNonVegRate: null,
-    vegMenu: "",
-    nonVegMenu: "",
-    catererRequirement: {
-      label: "Yes",
-      value: true,
-    },
-    customerSuggestion: "",
-  };
+  // console.log(otherVendorTransferListTargetKeys ? typeof otherVendorTransferListTargetKeys[0] : null);
 
   // object storing user's booking requirements
-  const [bookingDetails, setBookingDetails] = useState({
+  const [bookingDetails, setBookingDetails] = useState<bookingDetailsType>({
     ...bookingDetailsTemplate,
   });
 
-  const [bookingDetailsErrorInfo, setBookingDetailsErrorInfo] = useState({
-    ...bookingDetailsTemplate,
-    eventTypeInfo: "",
-    guestsCount: "",
-    roomsCount: "",
-    vehiclesCount: "",
-  });
+  const [bookingDetailsErrorInfo, setBookingDetailsErrorInfo] =
+    useState<bookingDetailsErrorInfoType>({
+      ...bookingDetailsTemplate,
+      eventTypeInfo: "",
+      guestsCount: "",
+      roomsCount: "",
+      vehiclesCount: "",
+      outsidePartyVendors: "",
+    });
+
+  // every time the transfer list is updated.. check whether new item already exists in the current in-house list.. if not push it
+  useEffect(() => {
+    if (otherVendorTransferListTargetKeys.length === 0) return;
+
+    const set1 = new Set(otherVendorTransferListTargetKeys);
+    const set2 = new Set(bookingDetails.requiredOtherVendors);
+
+    // Find elements that are in otherVendorTransferListTargetKeys but not in bookingDetails.requiredOtherVendors
+    const itemsAdded = otherVendorTransferListTargetKeys.filter(
+      (item) => !set2.has(item)
+    );
+
+    // Find elements that are in bookingDetails.requiredOtherVendors but not in otherVendorTransferListTargetKeys
+    const itemsRemoved = bookingDetails.requiredOtherVendors.filter(
+      (item) => !set1.has(item)
+    );
+
+    console.log(itemsRemoved);
+    console.log(itemsAdded);
+
+    // Make a copy of bookingDetails
+    const updatedBookingDetails = { ...bookingDetails };
+
+    updatedBookingDetails.requiredOtherVendors = [
+      ...otherVendorTransferListTargetKeys,
+    ];
+
+    // Remove items from outsidePartyVendors or inHouseVendors if they are in itemsRemoved
+    itemsRemoved.forEach((item) => {
+      if (item in updatedBookingDetails.outsidePartyVendors) {
+        const { [item]: _, ...remainingVendors } =
+          updatedBookingDetails.outsidePartyVendors;
+        updatedBookingDetails.outsidePartyVendors = remainingVendors;
+      } else if (updatedBookingDetails.inHouseVendors.includes(item)) {
+        updatedBookingDetails.inHouseVendors =
+          updatedBookingDetails.inHouseVendors.filter(
+            (vendorTypeId: string) => vendorTypeId !== item
+          );
+      }
+    });
+
+    // Ensure no duplicates when adding itemsAdded to inHouseVendors
+    updatedBookingDetails.inHouseVendors = Array.from(
+      new Set([...updatedBookingDetails.inHouseVendors, ...itemsAdded])
+    );
+
+    // Update state
+    setBookingDetails(updatedBookingDetails);
+  }, [otherVendorTransferListTargetKeys]);
+
+  console.log(otherVendorTransferListTargetKeys);
+  console.log(bookingDetails);
+
+  // execute this function when a vendor is moved back and forth btw in-house and outside-party
+  const handleOtherVendorsModeChange = (
+    modeType: string,
+    key: string,
+    value?: photographerBookingDetails | any
+  ) => {
+    setBookingDetails((prevDetails) => {
+      const updatedDetails = { ...prevDetails };
+
+      if (modeType === "in-house") {
+        // Remove from outsidePartyVendors if it exists
+        if (key in updatedDetails.outsidePartyVendors) {
+          const { [key]: _, ...remainingVendors } =
+            updatedDetails.outsidePartyVendors;
+          updatedDetails.outsidePartyVendors = remainingVendors;
+        }
+
+        // Add to inHouseVendors if not already present
+        if (!updatedDetails.inHouseVendors.includes(key)) {
+          updatedDetails.inHouseVendors = [
+            ...updatedDetails.inHouseVendors,
+            key,
+          ];
+        }
+      } else {
+        // Remove from inHouseVendors
+        updatedDetails.inHouseVendors = updatedDetails.inHouseVendors.filter(
+          (vendorTypeId: string) => vendorTypeId !== key
+        );
+
+        // Add or update outsidePartyVendors
+        updatedDetails.outsidePartyVendors = {
+          ...updatedDetails.outsidePartyVendors,
+          [key]: value,
+        };
+      }
+      return updatedDetails;
+    });
+  };
+
+  const setVendorData = (vendorData: photographerBookingDetails | any) => {
+    if (filteredSearchComponentFilters.vendorType?.value) {
+      handleBookingDetailsInfo("outsidePartyVendors", {
+        ...bookingDetails.outsidePartyVendors,
+        [filteredSearchComponentFilters.vendorType?.value]: vendorData,
+      });
+    }
+  };
+
+  const handleFilteredSearchComponentOpen = (vendorTypeData: {
+    vendorType: string;
+    _id: string;
+  }) => {
+    if (
+      Object.keys(bookingDetails.outsidePartyVendors[vendorTypeData._id])
+        .length > 0
+    )
+      return;
+
+    setFilteredSearchComponentFilters({
+      ...filteredSearchComponentFilters,
+      vendorType: {
+        label: vendorTypeData.vendorType,
+        value: vendorTypeData._id,
+      },
+    });
+  };
+
+  useEffect(() => {
+    if (filteredSearchComponentFilters.vendorType?.label) {
+      setOpenFilteredSearchComponent(true);
+    }
+  }, [filteredSearchComponentFilters]);
+
+  const handleFilteredSearchComponentClose = () => {
+    setOpenFilteredSearchComponent(false);
+  };
 
   const handleSubmissionConfirmationDialogOpen = () => {
     setSubmissionConfirmationDialog(true);
@@ -396,17 +576,27 @@ const BookingDetailsDialogComponent = ({
     }
 
     try {
-      const requiredFields = [
-        bookingDetailsErrorInfo.eventTypeInfo,
-        bookingDetailsErrorInfo.guestsCount,
-        bookingDetailsErrorInfo.roomsCount,
-        bookingDetailsErrorInfo.vehiclesCount,
-      ];
+      switch (formType) {
+        case "FORM_TWO":
+          const requiredFields = [
+            bookingDetailsErrorInfo.eventTypeInfo,
+            bookingDetailsErrorInfo.guestsCount,
+            bookingDetailsErrorInfo.roomsCount,
+            bookingDetailsErrorInfo.vehiclesCount,
+          ];
 
-      const isFormValid = requiredFields.every((field) => field === "");
+          const isFormValid = requiredFields.every((field) => field === "");
 
-      if (isFormValid) {
-        setFormType("FORM_THREE");
+          if (isFormValid) {
+            setFormType("FORM_THREE");
+          }
+          return;
+        case "FORM_THREE":
+          if (bookingDetailsErrorInfo.outsidePartyVendors === "")
+            setFormType("FORM_FOUR");
+          return;
+        default:
+          return;
       }
     } catch (error) {
       console.error(error);
@@ -451,6 +641,23 @@ const BookingDetailsDialogComponent = ({
     setFormErrorUpdateFlag((prevFlag) => !prevFlag);
   };
 
+  const validateFormThree = () => {
+    const hasEmptyVendor = Object.values(bookingDetails.outsidePartyVendors).some(
+      (item) => Object.keys(item).length === 0
+    );
+    
+    if (hasEmptyVendor) {
+      handleBookingDetailsErrorInfo(
+        `outsidePartyVendors`,
+        "Vendor selection cannot be empty!"
+      );
+    } else {
+      handleBookingDetailsErrorInfo(`outsidePartyVendors`, "");
+    }
+
+    setFormErrorUpdateFlag((prevFlag) =>!prevFlag);
+  };
+
   const handlePrevBtnClick = () => {
     switch (formType) {
       case "FORM_ONE":
@@ -488,7 +695,8 @@ const BookingDetailsDialogComponent = ({
         break;
       case "FORM_THREE":
         setFormProgress(60);
-        setFormType("FORM_FOUR");
+        validateFormThree();
+        // console.log(bookingDetails)
         break;
       case "FORM_FOUR":
         setFormProgress(80);
@@ -539,7 +747,7 @@ const BookingDetailsDialogComponent = ({
         eventId: bookingDetails.eventTypeInfo.eventTypeId,
         customerId: userInfoStore.userDetails?.Document?._id,
         bookingType: "HALL",
-        bookCaterer: bookingDetails.catererRequirement.value,
+        otherVendorRequirement: bookingDetails.otherVendorRequirement?.value,
         bookingStartDateTimestamp: parsedStartDateObject,
         bookingEndDateTimestamp: parsedEndDateObject,
         bookingDuration: parseInt(
@@ -547,26 +755,15 @@ const BookingDetailsDialogComponent = ({
         ),
         bookingStatusRemark: "",
 
-        guestsCount: bookingDetails.guestsCount
-          ? parseInt(bookingDetails.guestsCount)
-          : 0,
-        roomsCount: bookingDetails.roomsCount
-          ? parseInt(bookingDetails.roomsCount)
-          : 0,
+        guestsCount: bookingDetails.guestsCount,
+        roomsCount: bookingDetails.roomsCount,
         parkingRequirement: bookingDetails.parkingRequirement
           ? bookingDetails.parkingRequirement.value
           : false,
-        vehiclesCount: bookingDetails.vehiclesCount
-          ? parseInt(bookingDetails.vehiclesCount)
-          : 0,
-        customerVegRate: bookingDetails.expectedVegRate
-          ? parseInt(bookingDetails.expectedVegRate)
-          : 0,
-        customerNonVegRate: bookingDetails.expectedNonVegRate
-          ? parseInt(bookingDetails.expectedNonVegRate)
-          : 0,
-        customerVegItemsList: bookingDetails.vegMenu,
-        customerNonVegItemsList: bookingDetails.nonVegMenu,
+        vehiclesCount: bookingDetails.vehiclesCount,
+        requiredOtherVendors: bookingDetails.requiredOtherVendors,
+        outsidePartyVendors: bookingDetails.outsidePartyVendors,
+        inHouseVendors: bookingDetails.inHouseVendors,
         customerInfo: "",
         customerSuggestion: bookingDetails.customerSuggestion,
       };
@@ -599,9 +796,11 @@ const BookingDetailsDialogComponent = ({
     <Dialog
       open={open}
       keepMounted
-      onClose={() => {
-        setFormType("FORM_ONE");
-        handleClose();
+      onClose={(event, reason) => {
+        if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
+          setFormType("FORM_ONE");
+          handleClose();
+        }
       }}
       maxWidth="lg"
       fullWidth
@@ -610,6 +809,15 @@ const BookingDetailsDialogComponent = ({
         <div>
           <LoadingScreen />
         </div>
+      )}
+      {filteredSearchComponentFilters && (
+        <FilteredSearchComponent
+          key={JSON.stringify(filteredSearchComponentFilters)}
+          open={openFilteredSearchComponent}
+          handleClose={handleFilteredSearchComponentClose}
+          setVendorData={setVendorData}
+          defaultFilters={filteredSearchComponentFilters}
+        />
       )}
       <Dialog
         open={alertDialog}
@@ -726,6 +934,9 @@ const BookingDetailsDialogComponent = ({
         </div>
       ) : (
         <div className={styles.bookingDetailsMain__container}>
+          <div onClick={handleClose}>
+            <CloseIcon className={styles.closeIcon} />
+          </div>
           <div className={styles.headings__wrapper}>
             <h1 className={styles.heading}>booking form</h1>
             <h6 className={styles["sub-heading"]}>
@@ -785,7 +996,7 @@ const BookingDetailsDialogComponent = ({
               <div className={styles.wrapper}>
                 <div className={styles["sub-wrapper"]}>
                   <PersonIcon className={styles.icon} />
-                  <p className={styles.stepCount}>step 2</p>
+                  <p className={styles.stepCount}>step 3</p>
                 </div>
                 <div className={styles.btn}>
                   {formType === "FORM_FOUR" || formType === "FORM_FIVE"
@@ -805,7 +1016,7 @@ const BookingDetailsDialogComponent = ({
               <div className={styles.wrapper}>
                 <div className={styles["sub-wrapper"]}>
                   <PersonIcon className={styles.icon} />
-                  <p className={styles.stepCount}>step 3</p>
+                  <p className={styles.stepCount}>step 4</p>
                 </div>
                 <div className={styles.btn}>
                   {formType === "FORM_FIVE" ? "Completed" : "Pending"}
@@ -821,7 +1032,7 @@ const BookingDetailsDialogComponent = ({
               <div className={styles.wrapper}>
                 <div className={styles["sub-wrapper"]}>
                   <PersonIcon className={styles.icon} />
-                  <p className={styles.stepCount}>step 4</p>
+                  <p className={styles.stepCount}>step 5</p>
                 </div>
                 <div className={styles.btn}>pending</div>
               </div>
@@ -1046,18 +1257,29 @@ const BookingDetailsDialogComponent = ({
                   </div>
                   <div className={styles.wrapper}>
                     <div className={styles.title}>
-                      Caterer Requirement <span>*</span>
+                      Other Vendor Requirement <span>*</span>
                     </div>
                     <div className={styles.input__wrapper}>
                       <CurrencyRupeeIcon className={styles.icon} />
                       <div className={styles.divider}></div>
                       <Select
-                        options={ReactSelectBooleanOptions}
+                        options={[
+                          {
+                            value: true,
+                            label: "Yes",
+                          },
+                          {
+                            value: false,
+                            label: "No",
+                          },
+                        ]}
                         value={
-                          bookingDetails.catererRequirement.value
+                          bookingDetails.otherVendorRequirement
                             ? {
-                                label: bookingDetails.catererRequirement.label,
-                                value: bookingDetails.catererRequirement.value,
+                                label:
+                                  bookingDetails.otherVendorRequirement.label,
+                                value:
+                                  bookingDetails.otherVendorRequirement.value,
                               }
                             : null
                         }
@@ -1065,11 +1287,11 @@ const BookingDetailsDialogComponent = ({
                           selectedOption: SingleValue<ReactSelectBooleanOptionType>
                         ) => {
                           const updatedInfo = {
-                            label: selectedOption?.label || "No",
+                            label: selectedOption?.label || "",
                             value: selectedOption?.value || false,
                           };
                           handleBookingDetailsInfo(
-                            "catererRequirement",
+                            "otherVendorRequirement",
                             updatedInfo
                           );
                         }}
@@ -1172,7 +1394,7 @@ const BookingDetailsDialogComponent = ({
                       <Select
                         options={ReactSelectBooleanOptions}
                         value={
-                          bookingDetails.parkingRequirement.value
+                          bookingDetails.parkingRequirement
                             ? {
                                 label: bookingDetails.parkingRequirement.label,
                                 value: bookingDetails.parkingRequirement.value,
@@ -1242,166 +1464,276 @@ const BookingDetailsDialogComponent = ({
                     )}
                   </div>
                 </div>
-                {bookingDetails.catererRequirement.value && (
-                  <>
-                    <div className={styles.inputFields__wrapper}>
-                      <div className={styles.wrapper}>
-                        <div className={styles.title}>
-                          Expected Veg Rate/plate
-                        </div>
-                        <div className={styles.input__wrapper}>
-                          <CurrencyRupeeIcon className={styles.icon} />
-                          <div className={styles.divider}></div>
-                          <input
-                            type="number"
-                            name="expectedVegRate"
-                            value={bookingDetails.expectedVegRate || 0}
-                            className={styles.input}
-                            placeholder="enter your expected rate/plate"
-                            onChange={(event) =>
-                              handleBookingDetailsInfo(
-                                "expectedVegRate",
-                                event.target.value
-                              )
-                            }
-                          />
-                        </div>
-                      </div>
-                      <div className={styles.wrapper}>
-                        <div className={styles.title}>
-                          Expected Non-Veg Rate/plate
-                        </div>
-                        <div className={styles.input__wrapper}>
-                          <CurrencyRupeeIcon className={styles.icon} />
-                          <div className={styles.divider}></div>
-                          <input
-                            type="number"
-                            name="expectedNonVegRate"
-                            value={bookingDetails.expectedNonVegRate || 0}
-                            className={styles.input}
-                            placeholder="enter your expected rate/plate"
-                            onChange={(event) =>
-                              handleBookingDetailsInfo(
-                                "expectedNonVegRate",
-                                event.target.value
-                              )
-                            }
-                          />
-                        </div>
-                      </div>
+                {bookingDetails.otherVendorRequirement?.value && (
+                  <div className={styles.inputField__wrapper}>
+                    <div className={styles.title}>
+                      Other Vendors Preferences <span>*</span>
                     </div>
-                    <div className={styles.inputFields__wrapper}>
-                      <div className={styles.wrapper}>
-                        <div className={styles.title}>Veg Menu Required</div>
-                        <div className={styles.input__wrapper}>
-                          <RestaurantMenuIcon className={styles.icon} />
-                          <div className={styles.textAreaDivider}></div>
-                          <textarea
-                            name="vegMenu"
-                            value={bookingDetails.vegMenu}
-                            placeholder="enter items desired in veg menu"
-                            className={`${styles.input} ${styles.textArea}`}
-                            onChange={(event) =>
-                              handleBookingDetailsInfo(
-                                "vegMenu",
-                                event.target.value
-                              )
-                            }
-                          />
-                        </div>
-                      </div>
-                      <div className={styles.wrapper}>
-                        <div className={styles.title}>
-                          Non-Veg Menu Required
-                        </div>
-                        <div className={styles.input__wrapper}>
-                          <RestaurantMenuIcon className={styles.icon} />
-                          <div className={styles.textAreaDivider}></div>
-                          <textarea
-                            name="nonVegMenu"
-                            value={bookingDetails.nonVegMenu}
-                            placeholder="enter items desired in veg menu"
-                            className={`${styles.input} ${styles.textArea}`}
-                            onChange={(event) =>
-                              handleBookingDetailsInfo(
-                                "nonVegMenu",
-                                event.target.value
-                              )
-                            }
-                          />
-                        </div>
-                      </div>
+                    <div className="transferInput__wrapper">
+                      <Flex
+                        align="center"
+                        gap="middle"
+                        vertical
+                        style={{ width: "100%", minWidth: "69vw" }}
+                      >
+                        <TableTransfer
+                          dataSource={otherVendorTransferListMockData}
+                          targetKeys={otherVendorTransferListTargetKeys}
+                          disabled={otherVendorTransferListFieldDisabled}
+                          showSearch
+                          showSelectAll={true}
+                          onChange={otherVendorTransferListOnChange}
+                          filterOption={otherVendorTransferListFilterOption}
+                          leftColumns={otherVendorTransferListColumns}
+                          rightColumns={otherVendorTransferListColumns}
+                        />
+                      </Flex>
                     </div>
-                  </>
+                  </div>
                 )}
-                <div className={styles.inputField__wrapper}>
-                  <div className={styles.title}>
-                    Other Vendors Preferences <span>*</span>
-                  </div>
-                  <div className="transferInput__wrapper">
-                    <Flex
-                      align="center"
-                      gap="middle"
-                      vertical
-                      style={{ width: "100%", minWidth: "69vw" }}
-                    >
-                      <TableTransfer
-                        dataSource={otherVendorTransferListMockData}
-                        targetKeys={otherVendorTransferListTargetKeys}
-                        disabled={otherVendorTransferListFieldDisabled}
-                        showSearch
-                        showSelectAll={true}
-                        onChange={otherVendorTransferListOnChange}
-                        filterOption={otherVendorTransferListFilterOption}
-                        leftColumns={otherVendorTransferListColumns}
-                        rightColumns={otherVendorTransferListColumns}
-                      />
-                    </Flex>
-                  </div>
-                </div>
               </div>
             )}
             {formType === "FORM_THREE" && (
               <div
                 className={`${styles.container} ${styles.otherVendors__container}`}
               >
-                <div className={styles.multiCarousel__wrapper}>
-                  {otherVendorTransferListTargetKeys?.map((key, index) => {
-                    const currentItem = dataStore.vendorTypes?.data?.filter(
-                      (item: { _id: string }) => item._id === key
-                    );
-                    return (
-                      <div key={index} className={styles.wrapper}>
-                        <div className={styles.title}>
-                          {currentItem[0]?.vendorType}
-                        </div>
-                        <div className={styles.carousel__wrapper}>
-                          <Carousel
-                            opts={{
-                              align: "start",
-                            }}
-                            className={styles.carousel}
-                          >
-                            <CarouselContent>
-                              {Array.from({ length: 5 }).map((_, index) => (
-                                <CarouselItem
-                                  key={index}
-                                  className={`${styles.carousel__item} ${index === 3 && styles.selected__item}`}
-                                >
-                                  <div className="p-4">
-                                    Hello
+                {bookingDetails && (
+                  <>
+                    {Object.keys(bookingDetails.outsidePartyVendors).length !==
+                      0 && (
+                      <div className={styles.outsidePartyList__wrapper}>
+                        <h2 className={styles.heading}>Outside Party</h2>
+                        {Object.entries(bookingDetails.outsidePartyVendors).map(
+                          ([key, value]) => {
+                            const currentItem =
+                              dataStore.vendorTypes?.data?.filter(
+                                (item: { _id: string }) => item._id === key
+                              );
+                            return (
+                              <div key={key} className={styles.list__wrapper}>
+                                <div className={styles.header__wrapper}>
+                                  <div className={styles.title}>
+                                    {currentItem[0]?.vendorType}
                                   </div>
-                                </CarouselItem>
-                              ))}
-                            </CarouselContent>
-                            <CarouselPrevious />
-                            <CarouselNext />
-                          </Carousel>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <MoreVertOutlinedIcon
+                                        className={styles.menuIcon}
+                                      />
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                      onClick={() =>
+                                        handleOtherVendorsModeChange(
+                                          "in-house",
+                                          currentItem[0]?._id
+                                        )
+                                      }
+                                      style={{
+                                        zIndex: 1500,
+                                        display: "flex",
+                                        flexDirection: "row",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        gap: 4,
+                                        width: "fit-content",
+                                        color: "red",
+                                        fontSize: "15px",
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      <div className={styles.popoverContent}>
+                                        <MoveUpIcon />
+                                        <span>Move to In-House</span>
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                </div>
+                                {Object.keys(value).length === 0 ? (
+                                  <div
+                                    className={styles.selectionBox__wrapper}
+                                    onClick={() =>
+                                      handleFilteredSearchComponentOpen(
+                                        currentItem[0]
+                                      )
+                                    }
+                                  >
+                                    <div className={styles.wrapper}>
+                                      <PersonAddIcon className={styles.icon} />
+                                      <p className={styles.description}>
+                                        Click anywhere within the box to select
+                                        from a wide range of vendors.
+                                      </p>
+                                    </div>
+                                    <p className={styles.separator__text}>OR</p>
+                                    <div className={styles.wrapper}>
+                                      <button className={styles.addBtn}>
+                                        Add a vendor
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className={styles.data__wrapper}>
+                                    <div className={styles.img__wrapper}>
+                                      <img
+                                        src={value.vendorImage}
+                                        alt="Vendor Image"
+                                        // fill
+                                        className={styles.img}
+                                      />
+                                    </div>
+                                    <div className={styles.contents__wrapper}>
+                                      <h2 className={styles.title__wrapper}>
+                                        <p className={styles.key}>Company :</p>
+                                        <p className={styles.value}>
+                                          {value.companyName}
+                                        </p>
+                                      </h2>
+                                      <div
+                                        className={styles.formFields__wrapper}
+                                      >
+                                        <div className={styles.wrapper}>
+                                          <div className={styles.formField}>
+                                            <p className={styles.key}>
+                                              Expected Head Count :
+                                            </p>
+                                            <p className={styles.value}>
+                                              {value.expectedHeadCount}
+                                            </p>
+                                          </div>
+                                          <div className={styles.formField}>
+                                            <p className={styles.key}>
+                                              Photo Delivery Format :
+                                            </p>
+                                            <p className={styles.value}>
+                                              {value.photoDeliveryFormat}
+                                            </p>
+                                          </div>
+                                          <div className={styles.formField}>
+                                            <p className={styles.key}>
+                                              Photography Style :
+                                            </p>
+                                            <p className={styles.value}>
+                                              {value.photographyStyle}
+                                            </p>
+                                          </div>
+                                          <div className={styles.formField}>
+                                            <p className={styles.key}>
+                                              Number of Photographers :
+                                            </p>
+                                            <p className={styles.value}>
+                                              {value.numberOfPhotographers}
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <div className={styles.wrapper}>
+                                          <div className={styles.formField}>
+                                            <p className={styles.key}>
+                                              Special Requests :
+                                            </p>
+                                            <p className={styles.value}>
+                                              {value.specialRequests}
+                                            </p>
+                                          </div>
+                                          <div className={styles.formField}>
+                                            <p className={styles.key}>
+                                              Duration of Coverage :
+                                            </p>
+                                            <p className={styles.value}>
+                                              {value.durationOfCoverage}
+                                            </p>
+                                          </div>
+                                          <div className={styles.formField}>
+                                            <p className={styles.key}>
+                                              Additional Services :
+                                            </p>
+                                            <p className={styles.value}>
+                                              {value.additionalServices}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div
+                                      className={styles.cancelIcon}
+                                      onClick={() =>
+                                        handleBookingDetailsInfo(
+                                          "outsidePartyVendors",
+                                          {
+                                            ...bookingDetails.outsidePartyVendors,
+                                            [key]: {},
+                                          }
+                                        )
+                                      }
+                                    >
+                                      <CloseIcon className={styles.icon} />
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
+                        )}
+                      </div>
+                    )}
+                    {bookingDetailsErrorInfo.outsidePartyVendors && (
+                      <div className={styles.inputError}>
+                        <ErrorIcon className={styles.icon} />
+                        <p>{bookingDetailsErrorInfo.outsidePartyVendors}</p>
+                      </div>
+                    )}
+                    {bookingDetails.inHouseVendors[0] && (
+                      <div className={styles.inHouseList__wrapper}>
+                        <h2 className={styles.heading}>In House</h2>
+                        <div className={styles.body__wrapper}>
+                          {bookingDetails.inHouseVendors.map((key, index) => {
+                            const currentItem =
+                              dataStore.vendorTypes?.data?.filter(
+                                (item: { _id: string }) => item._id === key
+                              );
+                            return (
+                              <div key={index} className={styles.wrapper}>
+                                <p>{currentItem[0]?.vendorType}</p>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <MoreVertOutlinedIcon
+                                      className={styles.icon}
+                                    />
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    onClick={() =>
+                                      handleOtherVendorsModeChange(
+                                        "outside-party",
+                                        currentItem[0]?._id,
+                                        {}
+                                      )
+                                    }
+                                    style={{
+                                      zIndex: 1500,
+                                      display: "flex",
+                                      flexDirection: "row",
+                                      justifyContent: "center",
+                                      alignItems: "center",
+                                      gap: 4,
+                                      width: "fit-content",
+                                      color: "red",
+                                      fontSize: "15px",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    <div className={styles.popoverContent}>
+                                      <MoveUpIcon />
+                                      <span>Move to Outside-Party</span>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
             {formType == "FORM_FOUR" && (

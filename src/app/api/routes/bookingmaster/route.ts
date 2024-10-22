@@ -72,6 +72,8 @@ export async function POST(req: NextRequest) {
     const postBody: any = await req.json();
     const captchaToken = req.headers.get("X-Captcha-Token");
 
+    console.log(postBody);
+
     if (!captchaToken) {
       return new Response(
         JSON.stringify({ message: "Missing captcha token!" }),
@@ -176,6 +178,7 @@ export async function POST(req: NextRequest) {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
+    console.log(error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

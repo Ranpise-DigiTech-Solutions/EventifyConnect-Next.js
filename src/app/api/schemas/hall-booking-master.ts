@@ -2,50 +2,68 @@ import mongoose, { Schema, Document } from "mongoose";
 
 // Define types for fields in your Mongoose schema
 interface HallBookingMaster extends Document {
-    documentId: number;
-    customerType: 'WEB-PLATFORM' | 'WALK-IN';
-    hallId: mongoose.Schema.Types.ObjectId;
-    hallCity: string;
-    hallUserId: mongoose.Schema.Types.ObjectId;
-    eventId: mongoose.Schema.Types.ObjectId;
-    vendorTypeId: mongoose.Schema.Types.ObjectId;
-    customerId: mongoose.Schema.Types.ObjectId;
-    bookCaterer: boolean;
-    bookingStatus: 'PENDING' | 'CONFIRMED' | 'REJECTED';
-    bookingStatusRemark?: string;
-    bookingStartDateTimestamp: Date;
-    bookingEndDateTimestamp: Date;
-    bookingDuration: number;
-    customerSuggestion?: string;
-    
-    finalGuestCount: number;
-    finalRoomCount: number;
-    finalHallParkingRequirement: boolean;
-    finalVehicleCount: number;
-    finalVegRate?: number;
-    finalNonVegRate?: number;
-    finalVegItemsList?: string;
-    finalNonVegItemsList?: string;
+  documentId: number;
+  customerType: "WEB-PLATFORM" | "WALK-IN";
+  hallId: mongoose.Schema.Types.ObjectId;
+  hallCity: string;
+  hallUserId: mongoose.Schema.Types.ObjectId;
+  eventId: mongoose.Schema.Types.ObjectId;
+  vendorTypeId: mongoose.Schema.Types.ObjectId;
+  customerId: mongoose.Schema.Types.ObjectId;
+  otherVendorRequirement: boolean;
+  bookingStatus: "PENDING" | "CONFIRMED" | "REJECTED";
+  bookingStatusRemark?: string;
+  bookingStartDateTimestamp: Date;
+  bookingEndDateTimestamp: Date;
+  bookingDuration: number;
+  customerSuggestion?: string;
 
-    // additional details for walk-in customer booking
-    customerName?: string;
-    customerMainOfficeNo?: string;
-    customerMainMobileNo?: string;
-    customerMainEmail?: string;
+  finalGuestCount: number;
+  finalRoomCount: number;
+  finalHallParkingRequirement: boolean;
+  finalVehicleCount: number;
+  finalVegRate?: number;
+  finalNonVegRate?: number;
+  finalVegItemsList?: string;
+  finalNonVegItemsList?: string;
+  // additional details for walk-in customer booking
+  customerName?: string;
+  customerMainOfficeNo?: string;
+  customerMainMobileNo?: string;
+  customerMainEmail?: string;
 }
 
 // Define your schema
-const hallBookingMasterSchema = new Schema<HallBookingMaster>({
+const hallBookingMasterSchema = new Schema<HallBookingMaster>(
+  {
     documentId: { type: Number, unique: true },
-    customerType: { type: String, enum: ['WEB-PLATFORM', 'WALK-IN'], default: 'WEB-PLATFORM' },
-    hallId: { type: mongoose.Schema.Types.ObjectId, ref: 'hallmasters' },
+    customerType: {
+      type: String,
+      enum: ["WEB-PLATFORM", "WALK-IN"],
+      default: "WEB-PLATFORM",
+    },
+    hallId: { type: mongoose.Schema.Types.ObjectId, ref: "hallmasters" },
     hallCity: { type: String, required: true },
-    hallUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'serviceprovidermasters' },
-    eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'eventtypes' },
-    vendorTypeId: { type: mongoose.Schema.Types.ObjectId, ref: 'vendortypes', required: true },
-    customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'customermasters' },
-    bookCaterer: { type: Boolean, required: true },
-    bookingStatus: { type: String, enum: ['PENDING', 'CONFIRMED', 'REJECTED'], default: 'CONFIRMED' },
+    hallUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "serviceprovidermasters",
+    },
+    eventId: { type: mongoose.Schema.Types.ObjectId, ref: "eventtypes" },
+    vendorTypeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "vendortypes",
+      required: true,
+    },
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "customermasters",
+    },
+    otherVendorRequirement: { type: Boolean, required: true },
+    bookingStatus: {
+      type: String,
+      enum: ["PENDING", "CONFIRMED", "REJECTED"],
+      default: "CONFIRMED",
+    },
     bookingStatusRemark: { type: String },
     bookingStartDateTimestamp: { type: Date, required: true },
     bookingEndDateTimestamp: { type: Date, required: true },
@@ -65,9 +83,16 @@ const hallBookingMasterSchema = new Schema<HallBookingMaster>({
     customerMainOfficeNo: { type: String },
     customerMainMobileNo: { type: String },
     customerMainEmail: { type: String },
-}, { timestamps: true });
+  },
+  { timestamps: true }
+);
 
 // Define and export your model
-const HallBookingMaster = mongoose.models.hallBookingMaster || mongoose.model<HallBookingMaster>("hallBookingMaster", hallBookingMasterSchema);
+const HallBookingMaster =
+  mongoose.models.hallBookingMaster ||
+  mongoose.model<HallBookingMaster>(
+    "hallBookingMaster",
+    hallBookingMasterSchema
+  );
 
 export default HallBookingMaster;

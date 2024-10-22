@@ -1,0 +1,1 @@
+export { default as PhotographerDetailsForm } from './photographer-details-form';

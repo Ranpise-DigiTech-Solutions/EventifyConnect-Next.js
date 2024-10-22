@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 // Define types for fields in your Mongoose schema
-interface HallMaster extends Document {
+export interface HallMasterSchemaType extends Document {
     hallName: string;
     hallAddress: string;
     hallCountry: string;
@@ -48,7 +48,7 @@ interface HallMaster extends Document {
 }
 
 // Define your schema
-const hallMasterSchema = new Schema<HallMaster>({
+const hallMasterSchema = new Schema<HallMasterSchemaType>({
     hallName: { type: String, required: true, unique: true },
     hallAddress: { type: String, required: true },
     hallCountry: { type: String, required: true },
@@ -95,6 +95,6 @@ const hallMasterSchema = new Schema<HallMaster>({
 }, { timestamps: true });
 
 // Define and export your model
-const HallMaster = mongoose.models.hallMaster || mongoose.model<HallMaster>("hallMaster", hallMasterSchema);
+const HallMaster = mongoose.models.hallMaster || mongoose.model<HallMasterSchemaType>("hallMaster", hallMasterSchema);
 
 export default HallMaster;

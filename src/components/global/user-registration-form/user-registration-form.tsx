@@ -1,3 +1,5 @@
+"use client";
+
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useCallback, useEffect, useRef } from "react";
@@ -35,7 +37,7 @@ import { firebaseStorage } from "@/lib/db/firebase";
 import styles from "./user-registration-form.module.scss";
 import "react-phone-input-2/lib/style.css";
 import { RootState } from "@/redux/store";
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 
 type Props = {
   open: boolean;
@@ -56,7 +58,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
 
   // const onDrop = useCallback((acceptedFiles) => {
   //   // Do something with the uploaded files (e.g., display or process them)
-  //   
+  //
   // }, []);
 
   const customSelectStyles = {
@@ -261,7 +263,6 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
     useState<boolean>(false); // toggle user confirmation dialog
   const [userConfirmation, setUserConfirmation] = useState<boolean>(false); // ask user whether the entered details are correct to the best of his/her knowledge.
   const [loadingScreen, setLoadingScreen] = useState<boolean>(false); // toggle Loading Screen
-  const [isOptionsLoading, setIsOptionsLoading] = useState<boolean>(false); // to display loading screen when user selects a country or state
   const [isFileUploadComplete, setIsFileUploadComplete] =
     useState<boolean>(false); // to toggle submit
 
@@ -363,21 +364,21 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
   //fetch states data when a country is selected
   useEffect(() => {
     try {
-      setIsOptionsLoading(true);
+      setLoadingScreen(true);
       dispatch(fetchStates({ countryName: commonData.country }));
-      setIsOptionsLoading(false);
+      setLoadingScreen(false);
     } catch (error: any) {
-      setIsOptionsLoading(false);
+      setLoadingScreen(false);
       console.error(error.message);
     } finally {
-      setIsOptionsLoading(false);
+      setLoadingScreen(false);
     }
   }, [commonData.country]);
 
   //fetch cities data when a state is selected
   useEffect(() => {
     try {
-      setIsOptionsLoading(true);
+      setLoadingScreen(true);
       dispatch(
         fetchCitiesOfState({
           countryName: commonData.country,
@@ -385,10 +386,10 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
         })
       );
     } catch (error: any) {
-      setIsOptionsLoading(false);
+      setLoadingScreen(false);
       console.error(error.message);
     } finally {
-      setIsOptionsLoading(false);
+      setLoadingScreen(false);
     }
   }, [commonData.state]);
 
@@ -585,11 +586,14 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
     switch (fileExtension) {
       case "pdf":
         return "/images/pdf.svg";
-      case "pptx" || "ppt":
+      case "pptx":
+      case "ppt":
         return "/images/pptx.svg";
       case "docx":
         return "/images/docx.svg";
-      case "png" || "jpg" || "jpeg":
+      case "png":
+      case "jpg":
+      case "jpeg":
         return "/images/jpg.svg";
       default:
         return "/images/txt.svg";
@@ -785,36 +789,42 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
     }
 
     if (vendorType === "Banquet Hall") {
-      if (hallVendorData.hallCapacity === 0) {
+      if (hallVendorData.hallCapacity <= 0) {
         handleHallVendorDataErrorInfo(
           "hallCapacity",
-          "Hall capacity cannot be zero"
+          "Hall capacity cannot be less than or equal to zero"
         );
       } else {
         handleHallVendorDataErrorInfo("hallCapacity", "");
       }
-      if (hallVendorData.hallRooms === 0) {
+      if (hallVendorData.hallRooms <= 0) {
         handleHallVendorDataErrorInfo(
           "hallRooms",
-          "No of rooms cannot be zero"
+          "No of rooms cannot be less than or equal to zero"
         );
       } else {
         handleHallVendorDataErrorInfo("hallRooms", "");
       }
-      if (hallVendorData.hallVegRate === 0) {
-        handleHallVendorDataErrorInfo("hallVegRate", "Price cannot be zero");
+      if (hallVendorData.hallVegRate <= 0) {
+        handleHallVendorDataErrorInfo(
+          "hallVegRate",
+          "Price cannot be less than or equal to zero"
+        );
       } else {
         handleHallVendorDataErrorInfo("hallVegRate", "");
       }
-      if (hallVendorData.hallNonVegRate === 0) {
-        handleHallVendorDataErrorInfo("hallNonVegRate", "Price cannot be zero");
+      if (hallVendorData.hallNonVegRate <= 0) {
+        handleHallVendorDataErrorInfo(
+          "hallNonVegRate",
+          "Price cannot be less than or equal to zero"
+        );
       } else {
         handleHallVendorDataErrorInfo("hallNonVegRate", "");
       }
-      if (hallVendorData.hallParkingCapacity === 0) {
+      if (hallVendorData.hallParkingCapacity <= 0) {
         handleHallVendorDataErrorInfo(
           "hallParkingCapacity",
-          "Parking capacity cannot be zero"
+          "Parking capacity cannot be less than or equal to zero"
         );
       } else {
         handleHallVendorDataErrorInfo("hallParkingCapacity", "");
@@ -886,7 +896,6 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
 
         const businessImagesUrl = await Promise.all(uploadBusinessImages);
         handleCommonData("imagesUrl", businessImagesUrl);
-        
 
         // Registration Document Upload
         const hallRegisterDocumentRef = ref(
@@ -899,10 +908,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
         );
         const registrationDocumentUrl = await getDownloadURL(snapshot.ref);
         handleCommonData("registerDocumentUrl", registrationDocumentUrl);
-        
+
         setIsFileUploadComplete(true);
       } else if (userType === "CUSTOMER") {
-        
         const customerProfileImageRef = ref(
           firebaseStorage,
           `CUSTOMER/${userInfo.userDetails.UID}/ProfileImage/${customerData.customerProfileImage?.name}`
@@ -940,7 +948,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
     }
 
     setLoadingScreen(true);
-    const captchaToken = await executeRecaptcha('inquirySubmit');
+    const captchaToken = await executeRecaptcha("inquirySubmit");
     let data = {};
     let URL = "";
     if (userType === "VENDOR") {
@@ -1066,21 +1074,22 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
     }
 
     try {
-      
-      const response = userType === "VENDOR" ? await axios.post(URL, data, {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Captcha-Token': captchaToken,
-        },
-        withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
-      }) : await axios.patch(URL, data, {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Captcha-Token': captchaToken,
-        },
-        withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
-      });
-      
+      const response =
+        userType === "VENDOR"
+          ? await axios.post(URL, data, {
+              headers: {
+                "Content-Type": "application/json",
+                "X-Captcha-Token": captchaToken,
+              },
+              withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
+            })
+          : await axios.patch(URL, data, {
+              headers: {
+                "Content-Type": "application/json",
+                "X-Captcha-Token": captchaToken,
+              },
+              withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
+            });
     } catch (error: any) {
       setLoadingScreen(false);
       console.error(error.message);
@@ -1121,7 +1130,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                     ? userInfo.userDetails?.Document?.customerName
                     : userInfo.userDetails?.Document?.vendorName}
                 </p>
-                <VerifiedIcon className={`${styles.icon} ${styles.verificationIcon}`} />
+                <VerifiedIcon
+                  className={`${styles.icon} ${styles.verificationIcon}`}
+                />
               </div>
               <div className={styles.description}>
                 {userType === "CUSTOMER" ? (
@@ -1187,7 +1198,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                     <span>Customer Information</span>
                   )}
                 </h2>
-                <p className={styles['form__sub-title']}>
+                <p className={styles["form__sub-title"]}>
                   {userType === "VENDOR" ? (
                     <span>Fill the from to become a part of the team</span>
                   ) : (
@@ -1196,7 +1207,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                 </p>
               </div>
               <div className={styles.progressIndicator__wrapper}>
-                <div className={`${styles['sub-wrapper']} ${styles.currentForm}`}>
+                <div
+                  className={`${styles["sub-wrapper"]} ${styles.currentForm}`}
+                >
                   <div className={styles.formNumberIndicator}>
                     {formType === "FORM_ONE" ? (
                       <span>1</span>
@@ -1206,7 +1219,10 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                   </div>
                   <p className={styles.tag}>Address</p>
                 </div>
-                <div className={styles.progressBar} style={{ ...progressBarStyle }}>
+                <div
+                  className={styles.progressBar}
+                  style={{ ...progressBarStyle }}
+                >
                   <div
                     style={
                       formType !== "FORM_ONE"
@@ -1216,7 +1232,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                   ></div>
                 </div>
                 <div
-                  className={`${styles['sub-wrapper']} ${
+                  className={`${styles["sub-wrapper"]} ${
                     formType !== "FORM_ONE" && styles.currentForm
                   }`}
                 >
@@ -1239,7 +1255,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                   ></div>
                 </div>
                 <div
-                  className={`${styles['sub-wrapper']} ${
+                  className={`${styles["sub-wrapper"]} ${
                     formType !== "FORM_ONE" &&
                     formType !== "FORM_TWO" &&
                     styles.currentForm
@@ -1256,7 +1272,10 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                 </div>
                 {userType === "VENDOR" && (
                   <>
-                    <div className={styles.progressBar} style={progressBarStyle}>
+                    <div
+                      className={styles.progressBar}
+                      style={progressBarStyle}
+                    >
                       <div
                         style={
                           formType === "FORM_FOUR"
@@ -1266,7 +1285,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                       ></div>
                     </div>
                     <div
-                      className={`${styles['sub-wrapper']} ${
+                      className={`${styles["sub-wrapper"]} ${
                         formType === "FORM_FOUR" && styles.currentForm
                       }`}
                     >
@@ -1284,7 +1303,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                   <div className={styles.userInput__wrapper}>
                     {userType === "CUSTOMER" ? (
                       <div className={styles.textField__wrapper}>
-                        <div className={styles['sub-wrapper']}>
+                        <div className={styles["sub-wrapper"]}>
                           <div className={styles.title}>First Name *</div>
                           <input
                             type="text"
@@ -1312,7 +1331,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                             </div>
                           )}
                         </div>
-                        <div className={styles['sub-wrapper']}>
+                        <div className={styles["sub-wrapper"]}>
                           <div className={styles.title}>Last Name *</div>
                           <input
                             type="text"
@@ -1461,7 +1480,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                       </>
                     </div>
                     <div className={styles.textField__wrapper}>
-                      <div className={styles['sub-wrapper']}>
+                      <div className={styles["sub-wrapper"]}>
                         <div className={styles.title}>Country *</div>
                         <>
                           <div
@@ -1526,7 +1545,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                           )}
                         </>
                       </div>
-                      <div className={styles['sub-wrapper']}>
+                      <div className={styles["sub-wrapper"]}>
                         <div className={styles.title}>State *</div>
                         <>
                           <div
@@ -1589,7 +1608,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                       </div>
                     </div>
                     <div className={styles.textField__wrapper}>
-                      <div className={styles['sub-wrapper']}>
+                      <div className={styles["sub-wrapper"]}>
                         <div className={styles.title}>City *</div>
                         <>
                           <div
@@ -1652,7 +1671,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                           )}
                         </>
                       </div>
-                      <div className={`${styles.taluk} ${styles['sub-wrapper']}`}>
+                      <div
+                        className={`${styles.taluk} ${styles["sub-wrapper"]}`}
+                      >
                         <div className={styles.title}>Taluk *</div>
                         <>
                           <input
@@ -1680,7 +1701,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                         </>
                       </div>
                     </div>
-                    <div className={`${styles.textField} ${styles.pinCode__wrapper}`}>
+                    <div
+                      className={`${styles.textField} ${styles.pinCode__wrapper}`}
+                    >
                       <div className={styles.title}>Pincode *</div>
                       <>
                         <input
@@ -1736,7 +1759,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                   </div>
                 )}
                 {formType === "FORM_TWO" && (
-                  <div className={`${styles.userInput__wrapper} ${styles.registrationDetails__wrapper}`}>
+                  <div
+                    className={`${styles.userInput__wrapper} ${styles.registrationDetails__wrapper}`}
+                  >
                     {userType === "CUSTOMER" && (
                       <>
                         <div className={styles.profilePic__wrapper}>
@@ -1864,7 +1889,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                     {userType === "VENDOR" && (
                       <>
                         <div className={styles.textField}>
-                          <label className={styles.title}>Registration Date</label>
+                          <label className={styles.title}>
+                            Registration Date
+                          </label>
                           <input
                             type="date"
                             value={commonData.registerDate}
@@ -1943,7 +1970,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                   </div>
                 )}
                 {formType === "FORM_THREE" && (
-                  <div className={`${styles.userInput__wrapper} ${styles.contactDetails__wrapper}`}>
+                  <div
+                    className={`${styles.userInput__wrapper} ${styles.contactDetails__wrapper}`}
+                  >
                     <div className={`${styles.formSubTitle__wrapper}`}>
                       <h2 className={`${styles.formSubTitle}`}>
                         {formContactType === "PRIMARY" ? (
@@ -1975,8 +2004,10 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                     {userType === "VENDOR" &&
                       (formContactType === "PRIMARY" ? (
                         <div className={styles.textField__wrapper}>
-                          <div className={styles['sub-wrapper']}>
-                            <label className={styles.title}>First Name * </label>
+                          <div className={styles["sub-wrapper"]}>
+                            <label className={styles.title}>
+                              First Name *{" "}
+                            </label>
                             <>
                               <input
                                 type="text"
@@ -2007,7 +2038,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                               )}
                             </>
                           </div>
-                          <div className={styles['sub-wrapper']}>
+                          <div className={styles["sub-wrapper"]}>
                             <label className={styles.title}>Last Name * </label>
                             <>
                               <input
@@ -2042,7 +2073,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                         </div>
                       ) : (
                         <div className={styles.textField__wrapper}>
-                          <div className={styles['sub-wrapper']}>
+                          <div className={styles["sub-wrapper"]}>
                             <label className={styles.title}>First Name </label>
                             <>
                               <input
@@ -2076,7 +2107,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                               )}
                             </>
                           </div>
-                          <div className={styles['sub-wrapper']}>
+                          <div className={styles["sub-wrapper"]}>
                             <label className={styles.title}>Last Name </label>
                             <>
                               <input
@@ -2118,7 +2149,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                       (formContactType === "PRIMARY" ? (
                         <>
                           <div className={styles.textField}>
-                            <label className={styles.title}>Designation * </label>
+                            <label className={styles.title}>
+                              Designation *{" "}
+                            </label>
                             <>
                               <input
                                 type="text"
@@ -2148,7 +2181,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                             </>
                           </div>
                           <div className={styles.textField}>
-                            <label className={styles.title}>Office Number * </label>
+                            <label className={styles.title}>
+                              Office Number *{" "}
+                            </label>
                             <>
                               <div
                                 className={styles.phoneInput}
@@ -2224,7 +2259,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                             </>
                           </div>
                           <div className={styles.textField}>
-                            <label className={styles.title}>Office Number</label>
+                            <label className={styles.title}>
+                              Office Number
+                            </label>
                             <>
                               <div
                                 className={styles.phoneInput}
@@ -2269,7 +2306,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                     {formContactType === "PRIMARY" ? (
                       <>
                         <div className={styles.textField}>
-                          <label className={styles.title}>Mobile Number * </label>
+                          <label className={styles.title}>
+                            Mobile Number *{" "}
+                          </label>
                           <>
                             <div
                               className={styles.phoneInput}
@@ -2308,7 +2347,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                           </>
                         </div>
                         <div className={styles.textField}>
-                          <label className={styles.title}>Email Address *</label>
+                          <label className={styles.title}>
+                            Email Address *
+                          </label>
                           <>
                             <input
                               type="text"
@@ -2414,12 +2455,14 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                   </div>
                 )}
                 {formType === "FORM_FOUR" && (
-                  <div className={`${styles.userInput__wrapper} ${styles.detailedInfo__wrapper}`}>
+                  <div
+                    className={`${styles.detailedInfo__wrapper}`}
+                  >
                     {userType === "VENDOR" && (
                       <>
-                        <div className={styles.images__wrapper}>
+                        <div className={`${styles.userInput__wrapper} ${styles.images__wrapper}`}>
                           <div
-                            className={styles['sub-wrapper']}
+                            className={styles["sub-wrapper"]}
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={(e) => {
                               e.preventDefault();
@@ -2460,7 +2503,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                                     }
                                   }}
                                 >
-                                  <UploadFileIcon className={styles.uploadFileIcon} />
+                                  <UploadFileIcon
+                                    className={styles.uploadFileIcon}
+                                  />
                                   <p className={styles.uploadFileText}>
                                     Drag file to upload or <span>Browse</span>
                                   </p>
@@ -2505,7 +2550,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                                       }
                                     }}
                                   >
-                                    <UploadFileIcon className={styles.uploadFileIcon} />
+                                    <UploadFileIcon
+                                      className={styles.uploadFileIcon}
+                                    />
                                   </div>
                                 )}
                               </div>
@@ -2546,7 +2593,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                                       }
                                     }}
                                   >
-                                    <UploadFileIcon className={styles.uploadFileIcon} />
+                                    <UploadFileIcon
+                                      className={styles.uploadFileIcon}
+                                    />
                                   </div>
                                 )}
                               </div>
@@ -2587,7 +2636,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                                       }
                                     }}
                                   >
-                                    <UploadFileIcon className={styles.uploadFileIcon} />
+                                    <UploadFileIcon
+                                      className={styles.uploadFileIcon}
+                                    />
                                   </div>
                                 )}
                               </div>
@@ -2609,7 +2660,9 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                                       }
                                     }}
                                   >
-                                    <UploadFileIcon className={styles.uploadFileIcon} />
+                                    <UploadFileIcon
+                                      className={styles.uploadFileIcon}
+                                    />
                                   </div>
                                 )}
                                 {userType === "VENDOR" &&
@@ -2707,7 +2760,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                             vendorType === "Banquet Hall" && (
                               <>
                                 <div className={styles.textField__wrapper}>
-                                  <div className={styles['sub-wrapper']}>
+                                  <div className={styles["sub-wrapper"]}>
                                     <label className={styles.title}>
                                       Seating Capacity *
                                     </label>
@@ -2742,7 +2795,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                                       )}
                                     </>
                                   </div>
-                                  <div className={styles['sub-wrapper']}>
+                                  <div className={styles["sub-wrapper"]}>
                                     <label className={styles.title}>
                                       No. of Rooms *
                                     </label>
@@ -2777,8 +2830,10 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                                   </div>
                                 </div>
                                 <div className={styles.textField__wrapper}>
-                                  <div className={styles['sub-wrapper']}>
-                                    <label className={styles.title}>VegFood *</label>
+                                  <div className={styles["sub-wrapper"]}>
+                                    <label className={styles.title}>
+                                      VegFood *
+                                    </label>
                                     <>
                                       <input
                                         type="number"
@@ -2810,7 +2865,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                                       )}
                                     </>
                                   </div>
-                                  <div className={styles['sub-wrapper']}>
+                                  <div className={styles["sub-wrapper"]}>
                                     <label className={styles.title}>
                                       Non-VegFood *
                                     </label>
@@ -2847,8 +2902,10 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                                   </div>
                                 </div>
                                 <div className={styles.textField__wrapper}>
-                                  <div className={styles['sub-wrapper']}>
-                                    <label className={styles.title}>Parking *</label>
+                                  <div className={styles["sub-wrapper"]}>
+                                    <label className={styles.title}>
+                                      Parking *
+                                    </label>
                                     <div className={styles.radioInput}>
                                       <div className={styles.radio}>
                                         <input
@@ -2890,7 +2947,7 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                                       </div>
                                     </div>
                                   </div>
-                                  <div className={styles['sub-wrapper']}>
+                                  <div className={styles["sub-wrapper"]}>
                                     <label className={styles.title}>
                                       Parking Capacity *
                                     </label>
@@ -2928,9 +2985,13 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
                                     </>
                                   </div>
                                 </div>
-                                <div className={`${styles.textField} ${styles.hallParkingCapacity__wrapper}`}>
-                                  <div className={styles['sub-wrapper']}>
-                                    <label className={styles.title}>Freez Day *</label>
+                                <div
+                                  className={`${styles.textField} ${styles.hallParkingCapacity__wrapper}`}
+                                >
+                                  <div className={styles["sub-wrapper"]}>
+                                    <label className={styles.title}>
+                                      Freez Day *
+                                    </label>
                                     <>
                                       <input
                                         type="number"

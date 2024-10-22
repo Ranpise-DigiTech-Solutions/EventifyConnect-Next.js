@@ -90,6 +90,88 @@
         }
       }
     }
+
+    .skeleton__wrapper {
+      height: 500px;
+      width: 400px;
+      overflow: hidden;
+
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+
+      .image__section {
+        width: 100%;
+        height: 250px;
+
+        .img {
+          width: 100%;
+          height: 250px;
+          object-fit: cover;
+        }
+      }
+
+      .node__section {
+        background-color: var(--white-color);
+        height: 100%;
+        width: 100%;
+        padding: 1rem;
+
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: flex-start;
+
+        .header__section {
+          width: 100%;
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .body__section {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 0.5rem;
+          align-items: center;
+
+          .wrapper__1 {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 0.5rem;
+            align-items: flex-start;
+          }
+
+          .input {
+            width: 80%;
+          }
+
+          .wrapper__2 {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+
+            .availabilityInput {
+              width: 75%;
+            }
+          }
+        }
+
+        .footer__section {
+          width: 100%;
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+        }
+      }
+    }
   }
 
   .packagecount__wrapper {
@@ -149,6 +231,7 @@
       flex-direction: row;
       flex-wrap: wrap;
       justify-content: space-evenly;
+      gap: 2rem;
 
       .card {
         width: auto;

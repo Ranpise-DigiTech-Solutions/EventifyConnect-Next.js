@@ -120,8 +120,8 @@ export async function GET(req: NextRequest) {
                 hallParking: 1,
                 hallFreezDay: 1,
                 hallUserRating: 1,
-              }
-            }
+              },
+            },
           ],
           total: [{ $count: "count" }],
         },
@@ -288,14 +288,17 @@ export async function GET(req: NextRequest) {
         hallRooms: hall.hallRooms,
         hallParking: hall.hallParking,
         hallFreezDay: hall.hallFreezDay,
-        hallUserRating: hall.hallUserRating
+        hallUserRating: hall.hallUserRating,
       };
     });
 
-    console.log(hallAvailability)
+    console.log(hallAvailability);
 
     return new Response(
-      JSON.stringify({ hallAvailability: hallAvailability, totalCount: allHalls[0]?.total[0]?.count }),
+      JSON.stringify({
+        data: hallAvailability,
+        totalCount: allHalls[0]?.total[0]?.count,
+      }),
       {
         status: 200,
         headers: { "Content-Type": "application/json" },

@@ -142,9 +142,9 @@ export async function GET(
           bookingEndDateTimestamp: 1,
           bookingDuration: 1,
           bookingStatus: 1,
-          catererRequirement: {
-            label: { $cond: { if: "$bookCaterer", then: "Yes", else: "No" } },
-            value: "$bookCaterer",
+          otherVendorRequirement: {
+            label: { $cond: { if: "$finalOtherVendorRequirement", then: "Yes", else: "No" } },
+            value: "$finalOtherVendorRequirement",
           },
           guestsCount: "$finalGuestCount",
           roomsCount: "$finalRoomCount",

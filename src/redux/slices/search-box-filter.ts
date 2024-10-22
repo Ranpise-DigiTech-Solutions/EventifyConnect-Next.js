@@ -6,7 +6,7 @@ const initialState: any = {
     bookingDate: "",
     eventType: "",
     eventId: "",
-    vendorType: "",
+    vendorType: "Banquet Hall",
     vendorTypeId: ""
 };
 

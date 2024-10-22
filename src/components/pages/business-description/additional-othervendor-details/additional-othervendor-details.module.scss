@@ -1,0 +1,144 @@
+.additionalOtherVendorDetails__container {
+
+    width: 100%;
+    font-family: var(--font-family-1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    .pricingInformation__wrapper {
+        width: 100%;
+        flex: 1;
+        margin-bottom: 3rem;
+    
+        .title__wrapper {
+          width: 100%;
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+    
+          .title {
+            font-size: 18px;
+            font-weight: 800;
+            font-style: normal;
+            text-transform: capitalize;
+            text-decoration: none;
+          }
+    
+          .dropDown__wrapper {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+    
+            .dropDown__title {
+              font-size: 16px;
+              font-weight: 500;
+              font-style: normal;
+              color: rgb(226, 13, 140);
+            }
+    
+            .icon {
+              color: rgb(226, 13, 140);
+            }
+          }
+        }
+    
+        .lineSeparator {
+          margin: 1rem 0 2rem 0;
+          position: relative;
+    
+          &::before {
+            position: absolute;
+            content: "";
+            top: 0;
+            height: 1px;
+            width: 100%;
+            background-color: #cccccc;
+          }
+        }
+    
+        .pricing__wrapper {
+          width: 100%;
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+    
+          .rate__wrapper {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+    
+            .icon {
+              color: rgb(226, 13, 140);
+            }
+    
+            p {
+              color: rgb(226, 13, 140);
+              font-size: 16px;
+              span {
+                color: #cccccc;
+                font-size: 14px;
+              }
+            }
+          }
+    
+          .sub-title {
+            font-size: 16px;
+            font-weight: 500;
+            font-style: normal;
+            text-transform: none;
+            text-decoration: none;
+          }
+        }
+    
+        .contactBtn__wrapper {
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0 0.5rem;
+    
+          .btn {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            color: #ffffff;
+    
+            border-radius: 2rem;
+            transition: all 0.3s ease-in;
+    
+            .icon {
+              width: 1.25rem;
+              margin-right: 5px;
+            }
+    
+            .btn-caption {
+              font-size: 15px;
+            }
+    
+            &:nth-child(1) {
+              background-color: #ff69b4;
+    
+              &:hover {
+                background-color: #e04597; // #FF8ACD
+              }
+            }
+    
+            &:nth-child(2) {
+              background-color: #36c87f;
+    
+              &:hover {
+                background-color: #2ea866;
+              }
+            }
+          }
+        }
+      }
+}

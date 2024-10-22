@@ -26,6 +26,7 @@ import { BookingDetailsDialog } from "..";
 import { RootState } from "@/redux/store";
 import styles from "./booking-history.module.scss";
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import { documentId } from "firebase/firestore";
 
 type Props = {
   hallId: string;
@@ -181,7 +182,6 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
 
       setTimeout(async () => {
         try {
-          
           const URL =
             userType === "CUSTOMER"
               ? `/api/routes/bookingMaster/getUserBookings/?customerId=${userInfoStore.userDetails.Document._id}&startDateOfMonth=${startDateOfMonth}&endDateOfMonth=${endDateOfMonth}&page=${pageNo}&limit=${rowsPerPage}&sortCriteria=${dataSortCriteria}&bookingCategory=${currentTab}`
@@ -198,14 +198,11 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           });
 
-          
           setUserBookings(response.data[0].bookings);
           setTotalPages(response.data[0].total[0]?.count || 1);
 
           setIsPageLoading(false);
-        } catch (error) {
-          
-        }
+        } catch (error) {}
       }, 2000);
     };
 
@@ -250,17 +247,22 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
   };
 
   const handleViewDetailsClick = () => {
-    
     // setSelectedBooking(selectedBooking);
     setIsBookingDetailsDialogOpen(true);
     handleMoreVertIconClose();
   };
 
-  const handleCancelBooking = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleCancelBooking = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     // Handle cancel booking logic
     event.preventDefault();
 
-    if (!selectedBooking || !executeRecaptcha || !bookingCancelDialogFormRef.current) {
+    if (
+      !selectedBooking ||
+      !executeRecaptcha ||
+      !bookingCancelDialogFormRef.current
+    ) {
       return;
     }
 
@@ -270,16 +272,17 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
       setIsPageLoading(true);
 
       const formData = new FormData(bookingCancelDialogFormRef.current);
-      const formJson =Object.fromEntries((formData as any).entries());
+      const formJson = Object.fromEntries((formData as any).entries());
       const message = formJson.message;
 
-      const response = await axios.patch(
+      await axios.patch(
         `/api/routes/bookingMaster/${selectedBooking._id}`,
         {
           bookingStatus: "CANCELLED",
           bookingStatusRemark: message,
           customerEmail: selectedBooking.customerEmail || "",
           hallMainEmail: selectedBooking.hallMainEmail || "",
+          documentId: selectedBooking.documentId,
         },
         {
           headers: {
@@ -295,7 +298,6 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
       handleMoreVertIconClose(); // Close menu after action
       setReloadData(!reloadData);
     } catch (error) {
-      
       setIsPageLoading(false);
       handleMoreVertIconClose(); // Close menu after action
       setAlertDialog(true);
@@ -317,76 +319,19 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
       // const formJson =Object.fromEntries((formData as any).entries());
       // const message = formJson.message;
       const captchaToken = await executeRecaptcha("inquirySubmit");
-      const bookingMasterRes = await axios.get(
-        `/api/routes/bookingMaster/${selectedBooking._id}`,
+      await axios.post(
+        `/api/routes/bookingMaster/${selectedBooking._id}/confirmBooking/`,
+        {
+          bookingStatus: "CONFIRMED",
+          bookingStatusRemark: "",
+          customerEmail: "",
+          hallMainEmail: "",
+          documentId: selectedBooking.documentId,
+        },
         {
           headers: {
             "Content-Type": "application/json",
             "X-Captcha-Token": captchaToken,
-          },
-          withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
-        }
-      );
-
-      const bookingDetails = bookingMasterRes.data;
-      const {
-        bookingType,
-        createdAt,
-        updatedAt,
-        customerInfo,
-        customerNonVegItemsList,
-        customerVegItemsList,
-        customerNonVegRate,
-        customerVegRate,
-        guestsCount,
-        parkingRequirement,
-        roomsCount,
-        vehiclesCount,
-        _v,
-        ...info
-      } = bookingDetails;
-
-      const captchaToken2 = await executeRecaptcha("inquirySubmit");
-      // set the status as confirmed in bookingMaster
-      await axios.patch(
-        `/api/routes/bookingMaster/${selectedBooking._id}`,
-        {
-          bookingStatus: "CONFIRMED",
-          bookingStatusRemark: "",
-          customerEmail: selectedBooking.customerEmail || "",
-          hallMainEmail: selectedBooking.hallMainEmail || "",
-          documentId: selectedBooking.documentId || "",
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "X-Captcha-Token": captchaToken2,
-          },
-          withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
-        }
-      );
-
-      const captchaToken3 = await executeRecaptcha("inquirySubmit");
-      // push the confirmed booking to hallBookingMaster
-      await axios.post(
-        `api/routes/hallBookingMaster/`,
-        {
-          ...info,
-          finalVegRate: customerVegRate,
-          finalNonVegRate: customerNonVegRate,
-          finalVegItemsList: customerVegItemsList,
-          finalNonVegItemsList: customerNonVegItemsList,
-          finalGuestCount: guestsCount,
-          finalHallParkingRequirement: parkingRequirement,
-          bookingStatus: "CONFIRMED",
-          finalRoomCount: roomsCount,
-          finalVehicleCount: vehiclesCount,
-          bookingStatusRemark: "",
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "X-Captcha-Token": captchaToken3,
           },
           withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
         }
@@ -466,32 +411,32 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
         />
       )}
       <Dialog
-          open={alertDialog}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-        >
-          <DialogTitle id="alert-dialog-title">
-            {"Unexpected Error Occurred"}
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              An unexpected error occurred while processing your request. Please
-              try again later.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setAlertDialog(false)} autoFocus>
-              Agree
-            </Button>
-          </DialogActions>
-        </Dialog>
+        open={alertDialog}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Unexpected Error Occurred"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            An unexpected error occurred while processing your request. Please
+            try again later.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAlertDialog(false)} autoFocus>
+            Agree
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Dialog
         open={openBookingCancelConfirmationDialog}
         onClose={handleBookingCancelConfirmationDialogClose}
         PaperProps={{
           component: "form",
           onSubmit: handleCancelBooking,
-          ref: bookingCancelDialogFormRef
+          ref: bookingCancelDialogFormRef,
         }}
       >
         <DialogTitle>Cancel Booking</DialogTitle>
