@@ -1,5 +1,5 @@
 import admin, { ServiceAccount } from 'firebase-admin';
-import serviceAccount from '../../../firebase-admin-serviceAccountKey.json';
+import serviceAccount from '../../serviceAccountKey.json';
 
 // Type assertion for service account
 const serviceAccountData = serviceAccount as ServiceAccount;

@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks/use-redux-store";
 import { onAuthStateChanged } from "firebase/auth";
 import axios from "axios";
 import { useRouter } from 'next/navigation';
-
+import MyCart from '@/components/my-cart/my-cart';
 import useMediaQuery from "@mui/material/useMediaQuery";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
@@ -19,7 +19,7 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
-
+//import { SearchBar } from "@/components/pages/home";
 import MenuIcon from "@mui/icons-material/Menu";
 import PersonIcon from "@mui/icons-material/Person";
 import DashboardIcon from "@mui/icons-material/Dashboard";
@@ -33,25 +33,33 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 
 import { firebaseAuth } from '@/lib/db/firebase';
 import { BookingDetailsDialog, BookingHistory, UserProfile } from '@/components/pages/user-profile';
-import { setUserInfoData } from '@/redux/slices/user-info';
+import { setUserDetails } from '@/redux/slices/user-info';
 import { LoadingScreen } from '@/components/sub-components';
 import Link from 'next/link';
 import { useSearchParams } from "next/navigation";
 import Image from 'next/image';
 import styles from './page.module.scss';
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+import SearchIcon from "@mui/icons-material/Search";
+import { RootState } from "@/redux/store";
+import Favorites from '@/components/Favorites/Favorites';
+import Notification from '@/components/Notification/Notification';
+import SettingsComponent from '@/components/SettingsComponent/SettingsComponent';
+import Dashboard from '@/components/Dashboard/Dashboard';
+import HallForm from '@/components/HallForm/HallForm';
 
 interface Props {
   // window?: () => Window;
 }
 
 const UserProfilePage = (props: Props) => {
+  const searchBoxFilterStore = useAppSelector((state: RootState) => state.searchBoxFilter);
   const drawerWidth = 240;
   const router = useRouter();
   const isBelow900px = useMediaQuery("(max-width:900px)");
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [isClosing, setIsClosing] = React.useState(false);
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  //const { executeRecaptcha } = useGoogleReCaptcha();
 
   const dispatch = useAppDispatch();
   const userInfoStore = useAppSelector((state) => state.userInfo);
@@ -86,52 +94,50 @@ const UserProfilePage = (props: Props) => {
     try {
       router.push('/');
       await firebaseAuth.signOut(); // Sign out the current user
-      dispatch(setUserInfoData({key: "userDetails", value:{}}));
+      dispatch(setUserDetails({})); // Use setUserDetails with an empty object
       setUser(null);
-      
-    } catch (error: any) {
-      // Handle Error condition
-      console.error("Error logging out:", error.message);
+    } catch (error) {
+      // Use a type guard to check if the error is an instance of Error
+      if (error instanceof Error) {
+        console.error("Error logging out:", error.message);
+      } else {
+        // Handle cases where the error is not a standard Error object
+        console.error("An unknown error occurred during logout");
+      }
     }
-  };
+};
 
   useEffect(() => {
     
- if (!executeRecaptcha) {
-  return;
-}
+ //if (!executeRecaptcha) {
+  //return;
+//}
 
     const unsubscribe = onAuthStateChanged(firebaseAuth, async (currentUser) => {
       
       if (currentUser) {
-        
-        setUser(currentUser);
-        // setIsLoading(true);
-        
-        const getUserData = async () => {
-          const captchaToken = await executeRecaptcha('inquirySubmit');
-          try {
-            const response = await axios.get(
-              `/api/routes/userAuthentication/${
-                currentUser.uid
-              }`, {
-                headers: {
-                  'Content-Type': 'application/json',
-                  'X-Captcha-Token': captchaToken,
-                },
-                withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
-              }
-            );
-            dispatch(setUserInfoData({key:"userDetails",value: response.data}));
-          } catch (error: any) {
-            console.error("Error fetching user data:", error.message);
-          } finally {
-            // setIsLoading(false);
-          }
-        };
-        
-        getUserData();
+  setUser(currentUser);
+  // setIsLoading(true);
+
+  const getUserData = async () => {
+    try {
+      const response = await axios.get(
+        `/api/routes/userAuthentication/${currentUser.uid}`
+      );
+      dispatch(setUserDetails(response.data));
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Error fetching user data:", error.message);
       } else {
+        console.error("An unknown error occurred while fetching user data.");
+      }
+    }
+  };
+  
+  // You need to call the function after defining it
+  getUserData();
+        
+        } else {
         // No user is signed in
         setUser(null);
       }
@@ -139,7 +145,6 @@ const UserProfilePage = (props: Props) => {
 
     return () => unsubscribe();
   }, [
-    executeRecaptcha,
     dispatch,
     userInfoStore.userAuthStateChangeFlag,
     userInfoStore.userDataUpdateFlag,
@@ -147,13 +152,13 @@ const UserProfilePage = (props: Props) => {
 
   // get hall data
   useEffect(() => {
-    if (userInfoStore.userDetails.vendorType !== "Banquet Hall" || !executeRecaptcha) {
+    if (userInfoStore.userDetails.vendorType !== "Banquet Hall") {
       return;
     }
 
     try {
       const getServiceProviderData = async (hallData: { hallUserId: string }) => {
-        const captchaToken = await executeRecaptcha('inquirySubmit');
+        //const captchaToken = await executeRecaptcha('inquirySubmit');
 
         const response = await axios.get(
           `/api/routes/serviceProviderMaster/?serviceProviderId=${
@@ -161,7 +166,7 @@ const UserProfilePage = (props: Props) => {
           }`, {
             headers: {
               'Content-Type': 'application/json',
-              'X-Captcha-Token': captchaToken,
+              //'X-Captcha-Token': captchaToken,
             },
             withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -170,7 +175,7 @@ const UserProfilePage = (props: Props) => {
       };
 
       const getHallData = async () => {
-        const captchaToken = await executeRecaptcha('inquirySubmit');
+        //const captchaToken = await executeRecaptcha('inquirySubmit');
 
         const response = await axios.get(
           `/api/routes/hallMaster/getHallByUserId/?userId=${
@@ -178,7 +183,7 @@ const UserProfilePage = (props: Props) => {
           }`, {
             headers: {
               'Content-Type': 'application/json',
-              'X-Captcha-Token': captchaToken,
+              //'X-Captcha-Token': captchaToken,
             },
             withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -195,7 +200,7 @@ const UserProfilePage = (props: Props) => {
       console.error(error);
       setIsLoading(false);
     }
-  }, [user, userInfoStore.userDetails, executeRecaptcha]);
+  }, [user, userInfoStore.userDetails]);
 
   const drawer = (
     <Box
@@ -253,7 +258,7 @@ const UserProfilePage = (props: Props) => {
             </p>
           </ListItemButton>
         </ListItem>
-        {userInfoStore.userDetails.userType !== "CUSTOMER" && (
+        {userInfoStore.userDetails.userType === "CUSTOMER" && (
           <ListItem key={"Dashboard"} disablePadding>
             <ListItemButton>
               <ListItemIcon>
@@ -399,25 +404,20 @@ const UserProfilePage = (props: Props) => {
       case "User Profile":
         return <UserProfile />;
       case "Dashboard":
-        // return <Dashboard />;
-        return null;
+        return <Dashboard setActiveComponent={setActiveComponent} />;
       case "Business":
-        // return <HallForm />;
-        return null;
+        return <HallForm hallData={null} serviceProviderData={null} />;
       case "Booking History":
         return <BookingHistory hallId={hallData?._id || ""} />;
       case "Cart":
-        // return <MyCart />;
-        return null;
+        return <MyCart />;
       case "Favorites":
-        // return <Favorites />;
-        return null;
+        return <Favorites />;
       case "Notifications":
-        // return <Notification />;
-        return null;
+        return <Notification />;
       case "Settings":
-        // return <SettingsComponent />;
-        return null;
+        return <SettingsComponent />;
+      
       default:
         return null;
     }
@@ -438,9 +438,9 @@ const UserProfilePage = (props: Props) => {
             <AppBar
               position="fixed"
               sx={{
-                width: { md: `calc(100% - ${drawerWidth}px)` },
-                ml: { md: `${drawerWidth}px` },
-                // height:`3rem`,
+                width: `{ md: calc(100% - ${drawerWidth}px) }`,
+                ml: `{ md: ${drawerWidth}px }`,
+                // height:3rem,
                 backgroundColor: "#1A1A1A",
               }}
             >
@@ -509,7 +509,7 @@ const UserProfilePage = (props: Props) => {
               sx={{
                 flexGrow: 1,
                 p: 3,
-                width: { md: `calc(100% - ${drawerWidth}px)` },
+                width: `{ md: calc(100% - ${drawerWidth}px) }`,
                 padding: 0,
                 backgroundColor: "#404040", // #2e2e2e
               }}

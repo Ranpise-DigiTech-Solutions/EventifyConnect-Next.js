@@ -185,7 +185,7 @@ const customSelectStyles = {
 };
 
 const UserProfileForm = (props: Props) => {
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  //const { executeRecaptcha } = useGoogleReCaptcha();
   const profilePicInputRef = useRef<HTMLInputElement | null>(null); // btn used to trigger the hidden input that allows the selection of profile pic image
   const dispatch = useAppDispatch();
   const data = useAppSelector((state: RootState) => state.dataInfo); // COUNTRIES, STATES & CITIES
@@ -255,125 +255,172 @@ const UserProfileForm = (props: Props) => {
   );
 
   useEffect(() => {
-    if (
-      userInfoStore.userDetails.length === 0 ||
-      !userInfoStore.userDetails.Document
-    ) {
-      setIsLoading(true);
-      return;
-    }
-    setIsLoading(false);
+  // Check for the required data immediately.
+  const userDocument = userInfoStore.userDetails.Document;
 
-    const { customerName, vendorName, ...info } =
-      userInfoStore.userDetails.Document;
+  if (!userDocument) {
+    // If the data is not available yet, set loading state and exit.
+    setIsLoading(true);
+    return;
+  }
 
-    if (userType === "CUSTOMER") {
-      setCustomerData({
-        ...info,
-        customerFirstName: customerName.split(" ")[0],
-        customerLastName: customerName.split(" ")[1],
-      });
-    } else if (userType === "VENDOR") {
-      setServiceProviderData({
-        ...info,
-        vendorFirstName: vendorName.split(" ")[0],
-        vendorLastName: vendorName.split(" ")[1],
-      });
-    }
-  }, [userInfoStore.userDetails]);
+  // Once data is available, set loading to false.
+  setIsLoading(false);
+
+  // Destructure the necessary properties from the user document.
+  const { customerName, vendorName, ...info } = userDocument;
+  const userType = userInfoStore.userDetails.userType;
+
+  if (userType === "CUSTOMER" && customerName) {
+    // Split the name only if it exists.
+    const [customerFirstName, customerLastName] = customerName.split(" ");
+    setCustomerData({
+      ...info,
+      customerFirstName,
+      customerLastName,
+    });
+  } else if (userType === "VENDOR" && vendorName) {
+    const [vendorFirstName, vendorLastName] = vendorName.split(" ");
+    setServiceProviderData({
+      ...info,
+      vendorFirstName,
+      vendorLastName,
+    });
+  }
+}, [
+  // Depend on the specific properties that the effect uses.
+  userInfoStore.userDetails.Document,
+  userInfoStore.userDetails.userType
+]);
 
   //fetch states data when a country is selected
   useEffect(() => {
+  // Use a single condition to check for the initial render and necessary data
+  const country =
+    userType === "CUSTOMER"
+      ? customerData.customerCountry
+      : serviceProviderData.vendorCountry;
+
+  // Skip execution if it's the initial render or if the country data is missing
+  if (isInitialRender1.current || !country) {
     if (isInitialRender1.current) {
-      // Skip the first execution
       isInitialRender1.current = false;
-      return;
     }
+    return;
+  }
+
+  const fetchData = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      dispatch(
-        fetchStates({
-          countryName:
-            userType === "CUSTOMER"
-              ? customerData.customerCountry
-              : serviceProviderData.vendorCountry,
-        })
-      );
-      setIsLoading(false);
-    } catch (error: any) {
-      setIsLoading(false);
-      console.error(error.message);
+      // The dispatch is an async operation, so it should be awaited or handled
+      // as part of a proper state management flow to ensure loading is correct.
+      // This assumes `fetchStates` returns a promise.
+      await dispatch(fetchStates({ countryName: country }));
+    } catch (error) {
+  // Assert that the 'error' is of type 'Error'
+  const errorMessage = (error as Error).message;
+  console.error(errorMessage);
+      // Handle the error state if needed
     } finally {
+      // Always set loading to false in the finally block
       setIsLoading(false);
     }
-  }, [
-    userType,
-    customerData.customerCountry,
-    serviceProviderData.vendorCountry,
-  ]);
+  };
+
+  fetchData();
+}, [
+  // Depend on the specific data points that the effect uses,
+  // not on the entire objects.
+  userType,
+  customerData.customerCountry,
+  serviceProviderData.vendorCountry,
+]);
 
   //fetch cities data when a state is selected
   useEffect(() => {
-    if (!customerData.customerState && !serviceProviderData.vendorState) {
-      return;
-    }
+  // 1. Determine the relevant data in a single place to avoid repetition.
+  const state = userType === "CUSTOMER"
+    ? customerData.customerState
+    : serviceProviderData.vendorState;
+    
+  const country = userType === "CUSTOMER"
+    ? customerData.customerCountry
+    : serviceProviderData.vendorCountry;
+
+  // 2. Only proceed if both country and state data are available.
+  if (!state || !country) {
+    return;
+  }
+
+  // 3. Define an async function inside the effect to handle data fetching.
+  const fetchCities = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      if (userType === "CUSTOMER") {
-        dispatch(
-          fetchCitiesOfState({
-            countryName: customerData.customerCountry,
-            stateName: customerData.customerState,
-          })
-        );
-      } else {
-        dispatch(
-          fetchCitiesOfState({
-            countryName: serviceProviderData.vendorCountry,
-            stateName: serviceProviderData.vendorState,
-          })
-        );
-      }
-    } catch (error: any) {
-      setIsLoading(false);
-      console.error(error.message);
+      // The dispatch itself is an async operation that should be awaited.
+      // This ensures the loading state is managed correctly.
+      await dispatch(
+        fetchCitiesOfState({
+          countryName: country,
+          stateName: state,
+        })
+      );
+    } catch (error) {
+      console.error('Failed to fetch cities:', error);
+      // You can add logic here to handle the error state, e.g., setError(true)
     } finally {
+      // Ensure the loading state is turned off regardless of success or failure.
       setIsLoading(false);
     }
-  }, [userType, customerData.customerState, serviceProviderData.vendorState]);
+  };
+
+  fetchCities();
+
+}, [
+  // 4. Specify dependencies correctly for optimal performance.
+  userType,
+  customerData.customerState,
+  customerData.customerCountry,
+  serviceProviderData.vendorState,
+  serviceProviderData.vendorCountry,
+]);
 
   // call uploadFiles() method whenever user uploads a new profle pic
   useEffect(() => {
-    if (!executeRecaptcha) {
-      return;
-    }
+  // Exit early if the reCAPTCHA execution function is not available.
+  // if (!executeRecaptcha) {
+  //   return;
+  // }
 
-    if (
-      (userType === "CUSTOMER" &&
-        (typeof customerData.customerProfileImage === "string" ||
-          customerData.customerProfileImage === "")) ||
-      (userType === "VENDOR" &&
-        (typeof serviceProviderData.vendorProfileImage === "string" ||
-          serviceProviderData.vendorProfileImage === ""))
-    ) {
-      return;
-    }
-    uploadFiles();
-  }, [
-    executeRecaptcha,
-    customerData.customerProfileImage,
-    serviceProviderData.vendorProfileImage,
-  ]);
+  // Determine the profile image based on the user type.
+  const profileImage =
+    userType === "CUSTOMER"
+      ? customerData.customerProfileImage
+      : serviceProviderData.vendorProfileImage;
+
+  // Check if the profile image is a string. If so, it means the image is
+  // either not a new file to upload or is an empty string, so we can return.
+  if (typeof profileImage === "string") {
+    return;
+  }
+
+  // If the profileImage is not a string (i.e., it's a new file), upload it.
+  uploadFiles();
+
+}, [
+  userType,
+  customerData.customerProfileImage,
+  serviceProviderData.vendorProfileImage,
+]);
 
   // code to upload files to firebase
   const uploadFiles = async () => {
-    if (!executeRecaptcha) {
-      return;
-    }
+    // if (!executeRecaptcha) {
+    //   return;
+    // }
 
     setIsLoading(true);
     try {
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+      // const captchaToken = await executeRecaptcha("inquirySubmit");
       if (userType === "VENDOR") {
         const vendorProfileImageRef = ref(
           firebaseStorage,
@@ -398,7 +445,7 @@ const UserProfileForm = (props: Props) => {
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -424,7 +471,7 @@ const UserProfileForm = (props: Props) => {
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -442,11 +489,11 @@ const UserProfileForm = (props: Props) => {
     e: React.MouseEvent<HTMLButtonElement>
   ) => {
     e.preventDefault();
-    if (!executeRecaptcha) {
-      return;
-    }
+    // if (!executeRecaptcha) {
+    // //   return;
+    // }
     try {
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+      //const captchaToken = await executeRecaptcha("inquirySubmit");
       if (userType === "CUSTOMER") {
         const response = await axios.patch(
           `/api/routes/customerMaster/${customerData._id}`,
@@ -460,7 +507,7 @@ const UserProfileForm = (props: Props) => {
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -479,7 +526,7 @@ const UserProfileForm = (props: Props) => {
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -499,11 +546,11 @@ const UserProfileForm = (props: Props) => {
     e: React.MouseEvent<HTMLButtonElement>
   ) => {
     e.preventDefault();
-    if (!executeRecaptcha) {
-      return;
-    }
+    // if (!executeRecaptcha) {
+    //   return;
+    // }
     try {
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+      //const captchaToken = await executeRecaptcha("inquirySubmit");
       if (userType === "CUSTOMER") {
         const response = await axios.patch(
           `/api/routes/customerMaster/${customerData._id}`,
@@ -516,7 +563,7 @@ const UserProfileForm = (props: Props) => {
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -535,7 +582,7 @@ const UserProfileForm = (props: Props) => {
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -555,11 +602,11 @@ const UserProfileForm = (props: Props) => {
     e: React.MouseEvent<HTMLButtonElement>
   ) => {
     e.preventDefault();
-    if (!executeRecaptcha) {
-      return;
-    }
+    // if (!executeRecaptcha) {
+    //   return;
+    // }
     try {
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+      //const captchaToken = await executeRecaptcha("inquirySubmit");
       if (userType === "CUSTOMER") {
         const response = await axios.patch(
           `/api/routes/customerMaster/${customerData._id}`,
@@ -575,7 +622,7 @@ const UserProfileForm = (props: Props) => {
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -596,7 +643,7 @@ const UserProfileForm = (props: Props) => {
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }

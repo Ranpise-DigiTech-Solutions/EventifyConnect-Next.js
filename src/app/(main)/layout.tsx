@@ -14,27 +14,42 @@ import { Footer, Navbar } from "@/components/global";
 
 const SiteLayout = ({ children }: { children: React.ReactNode }) => {
   const dispatch = useAppDispatch();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start as true
 
   useEffect(() => {
-    try {
-      const fetchData = () => {
-        dispatch(fetchCitiesOfCountry({ countryName: "India" }));
-        dispatch(fetchEventTypes());
-        dispatch(fetchVendorTypes());
-        dispatch(fetchCountries());
-      };
-      fetchData();
-    } catch (error: any) {
-      console.error("Couldn't fetch data :- ", error.message);
-    }
+    let isMounted = true;
+
+    const fetchData = async () => {
+      if (!isMounted) return;
+      
+      try {
+        await Promise.all([
+          dispatch(fetchCitiesOfCountry({ countryName: "India" })),
+          dispatch(fetchEventTypes()),
+          dispatch(fetchVendorTypes()),
+          dispatch(fetchCountries()),
+        ]);
+      } catch (error) {
+        console.error("Couldn't fetch data: ", error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [dispatch]);
 
-  if(isLoading) return <LoadingScreen />;
+  if (isLoading) return <LoadingScreen />;
 
   return (
     <main>
-      <Navbar setIsLoading={setIsLoading}/>
+      <Navbar />
       {children}
       <Footer />
     </main>

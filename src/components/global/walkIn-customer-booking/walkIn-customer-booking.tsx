@@ -60,7 +60,7 @@ const WalkInCustomerBookingDialogComponent = ({ open, handleClose, hallData, ser
   const [bookingConfirmationScreen, setBookingConfirmationScreen] =
     useState(false); // toggle booking confirmation screen
 
-    const { executeRecaptcha } = useGoogleReCaptcha();
+    //const { executeRecaptcha } = useGoogleReCaptcha();
 
   const customStyles = {
     control: (provided : any, state: any) => ({
@@ -387,12 +387,12 @@ const WalkInCustomerBookingDialogComponent = ({ open, handleClose, hallData, ser
   };
 
   const handleFormSubmit = async () => {
-    if (!executeRecaptcha) {
-      return;
-    }
+    // if (!executeRecaptcha) {
+    //   return;
+    // }
     setIsLoading(true);
     try {
-      const captchaToken = await executeRecaptcha('inquirySubmit');
+      // const captchaToken = await executeRecaptcha('inquirySubmit');
       const parsedStartDateObject: Date | null = parseDate(
         bookingDetails.bookingStartDate,
         "-"
@@ -454,7 +454,7 @@ const WalkInCustomerBookingDialogComponent = ({ open, handleClose, hallData, ser
         postData, {
           headers: {
             'Content-Type': 'application/json',
-            'X-Captcha-Token': captchaToken,
+            //'X-Captcha-Token': captchaToken,
           },
           withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
         }

@@ -1,67 +1,63 @@
-// pages/api/sendEmail.ts
-
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
-
-// senderType : INFO_EC, ADMIN_EC, NOREPLY_EC
 
 export async function POST(req: NextRequest) {
   const reqBody = await req.json();
   const { senderType, recipientEmailId, subject, message, bcc } = reqBody;
 
-  if (!senderType || !recipientEmailId || !recipientEmailId?.endsWith("@gmail.com") || !subject || !message) {
-    return new Response(
-      JSON.stringify({ sent: false, message: "Required fields not found!!" }),
-      {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      }
+  if (
+    !senderType ||
+    !recipientEmailId ||
+    !recipientEmailId?.endsWith("@gmail.com") ||
+    !subject ||
+    !message
+  ) {
+    return NextResponse.json(
+      { sent: false, message: "Required fields not found!!" },
+      { status: 400 } // Use 400 Bad Request for client-side errors
     );
   }
 
-  let senderEmailId: string | undefined = "";
-  let senderEmailPassword: string | undefined = "";
-  let from: string | undefined = "";
+  let senderEmailId: string | undefined;
+  let senderEmailPassword: string | undefined;
+  let from: string | undefined;
 
   switch (senderType) {
     case "INFO_EC":
       senderEmailId = process.env.INFO_EC_EMAIL_ADDRESS;
       senderEmailPassword = process.env.INFO_EC_EMAIL_PASSWORD;
-      from = '"Info EC" <info@eventifyconnect.com>'
+      from = '"Info EC" <info@eventifyconnect.com>';
       break;
     case "ADMIN_EC":
       senderEmailId = process.env.ADMIN_EC_EMAIL_ADDRESS;
       senderEmailPassword = process.env.ADMIN_EC_EMAIL_PASSWORD;
-      from = '"Admin EC" <admin@eventifyconnect.com>'
+      from = '"Admin EC" <admin@eventifyconnect.com>';
       break;
     case "NOREPLY_EC":
       senderEmailId = process.env.NOREPLY_EC_EMAIL_ADDRESS;
       senderEmailPassword = process.env.NOREPLY_EC_EMAIL_PASSWORD;
-      from = '"No-Reply EC" <no-reply@eventifyconnect.com>'
+      from = '"No-Reply EC" <no-reply@eventifyconnect.com>';
       break;
     default:
-      break;
+      return NextResponse.json(
+        { sent: false, message: "Invalid sender type" },
+        { status: 400 }
+      );
   }
 
-  if (
-    !senderEmailId ||
-    !senderEmailId?.endsWith("@eventifyconnect.com") ||
-    !senderEmailPassword
-  ) {
-    return new Response(
-      JSON.stringify({ sent: false, message: "Invalid sender details!!" }),
-      {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      }
+  // Check if environment variables are correctly set
+  if (!senderEmailId || !senderEmailPassword) {
+    console.error(`Sender details for ${senderType} not found in environment variables.`);
+    return NextResponse.json(
+      { sent: false, message: "Invalid sender details!!" },
+      { status: 500 } // Use 500 for server-side misconfiguration
     );
   }
 
-  // Replace with your Hostinger SMTP details
-  let transporter = nodemailer.createTransport({
+  const transporter = nodemailer.createTransport({
     host: "srv543385.hstgr.cloud",
     port: 465,
-    secure: true, //should not use the implicit SSL/TLS protocol (SMTPS) on a dedicated port (like port 465), but rather start with a plain text connection and then upgrade it to a secure connection using the STARTTLS command
+    secure: true,
     auth: {
       user: senderEmailId,
       pass: senderEmailPassword,
@@ -69,30 +65,23 @@ export async function POST(req: NextRequest) {
   });
 
   try {
-    // Send mail with defined transport object
-    let info = await transporter.sendMail({
-      from: from,
+    const info = await transporter.sendMail({
+      from,
       to: recipientEmailId,
       bcc: bcc ? bcc : "",
-      subject: subject,
+      subject,
       html: message,
     });
 
-    return new Response(
-      JSON.stringify({ sent: true, message: "Mail sent successfully! ", info }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
+    return NextResponse.json(
+      { sent: true, message: "Mail sent successfully!", info },
+      { status: 200 }
     );
-  } catch (error) {
-    console.log(error);
-    return new Response(
-      JSON.stringify({ sent: false, message: "Failed to send a mail!" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+  } catch (error: any) {
+    console.error("Failed to send mail:", error);
+    return NextResponse.json(
+      { sent: false, message: "Failed to send a mail!" },
+      { status: 500 }
     );
   }
 }

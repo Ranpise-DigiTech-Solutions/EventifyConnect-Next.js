@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo } from 'react';
 
 type Props = {
     active: number,
@@ -7,19 +7,26 @@ type Props = {
 }
 
 const NavigationDots = ({ active, imageList, className }: Props) => {
+    // The component is now memoized, so this code only runs when props change
+    
+    // Check if imageList is a valid array with elements
+    if (!imageList || imageList.length === 0) {
+      return null;
+    }
+
     return (
         <div>
           <div className="app__navigation">
-            {imageList && imageList.map((item,index)=>(
+            {imageList.map((_, index) => (
                 <div
-                key={"Image-" + index}
-                className={className}
-                style={active===index? {backgroundColor:`#313bac`} : {}}
+                    key={`dot-${index}`}
+                    className={className}
+                    style={active === index ? { backgroundColor: `#313bac` } : {}}
                 />
             ))}
           </div>
         </div>
-      )
+    );
 }
 
-export default NavigationDots
+export default memo(NavigationDots);

@@ -53,7 +53,8 @@ import styles from "./user-auth-dialog.module.scss";
 import { firebaseAuth } from "@/lib/db/firebase";
 import { verifyUserByEmail } from "@/lib/utils/verify-user";
 import {
-  setUserInfoData,
+  setUserDetails,
+  setUserLocation,
   toggleUserAuthStateChangeFlag,
 } from "@/redux/slices/user-info";
 import {
@@ -81,7 +82,7 @@ const UserAuthDialogComponent = ({
   handleClose,
   handleRegistrationDialogOpen,
 }: Props) => {
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  //const { executeRecaptcha } = useGoogleReCaptcha();
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -262,11 +263,11 @@ const UserAuthDialogComponent = ({
   };
 
   const handleSignInWithPassword = async () => {
-    if (!executeRecaptcha) {
-      return;
-    }
+    //if (!executeRecaptcha) {
+      //return;
+    //}
     setLoadingScreen(true);
-    const captchaToken = await executeRecaptcha("inquirySubmit");
+    //const captchaToken = await executeRecaptcha("inquirySubmit");
 
     if (
       inputValue &&
@@ -288,7 +289,7 @@ const UserAuthDialogComponent = ({
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -319,7 +320,7 @@ const UserAuthDialogComponent = ({
     } catch (error: any) {
       console.error(error.message);
     }
-  }, [signInPasswordError, signInPasswordErrorUpdateFlag, executeRecaptcha]);
+  }, [signInPasswordError, signInPasswordErrorUpdateFlag]);
 
   // const handleEmailLinkSignIn = async (inputType, inputValue) => {
   //   try {
@@ -447,12 +448,12 @@ const UserAuthDialogComponent = ({
   // };
 
   const handleSignUp = async () => {
-    if (!executeRecaptcha) {
-      return;
-    }
+    //if (!executeRecaptcha) {
+      //return;
+    //}
     // here the postdata will be customerInfo and vendorInfo Object defined above
     setLoadingScreen(true);
-    const captchaToken = await executeRecaptcha("inquirySubmit");
+    //const captchaToken = await executeRecaptcha("inquirySubmit");
 
     try {
       const userCredential =
@@ -490,7 +491,7 @@ const UserAuthDialogComponent = ({
       const response = await axios.post(url, postData, {
         headers: {
           "Content-Type": "application/json",
-          "X-Captcha-Token": captchaToken,
+          //"X-Captcha-Token": captchaToken,
         },
         withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
       });
@@ -514,7 +515,7 @@ const UserAuthDialogComponent = ({
     try {
       handleSignUp();
     } catch (error) {}
-  }, [isOTPVerified, executeRecaptcha]);
+  }, [isOTPVerified]);
 
   const customSelectStyles = {
     control: (provided: any, state: any) => ({
@@ -550,19 +551,18 @@ const UserAuthDialogComponent = ({
       } else if (!inputValue.endsWith("@gmail.com")) {
         setInputError("Couldn't find your account");
       } else {
-        setLoadingScreen(true);
-        let userExists = false;
-        if (executeRecaptcha) {
-          const captchaToken = await executeRecaptcha("inquirySubmit");
-          userExists = await verifyUserByEmail(inputValue, captchaToken);
-        }
-        if (!userExists) {
-          setInputError("Couldn't find your account. Sign Up to continue!");
-        } else {
-          setInputError("");
-        }
-        setLoadingScreen(false);
-      }
+  setLoadingScreen(true);
+  let userExists = false;
+   
+  userExists = await verifyUserByEmail(inputValue);
+   
+  if (!userExists) {
+    setInputError("Couldn't find your account. Sign Up to continue!");
+  } else {
+    setInputError("");
+  }
+  setLoadingScreen(false);
+}
     } else if (inputType === "PHONE") {
       const phoneRegex = /^\+(?:[0-9] ?){6,14}[0-9]$/;
       if (!inputValue) {
@@ -593,13 +593,10 @@ const UserAuthDialogComponent = ({
         } else {
           setLoadingScreen(true);
           let userExists = false;
-          if (executeRecaptcha) {
-            const captchaToken = await executeRecaptcha("inquirySubmit");
-            userExists = await verifyUserByEmail(
-              vendorInfo.email,
-              captchaToken
-            );
-          }
+          //if (executeRecaptcha) {
+            //const captchaToken = await executeRecaptcha("inquirySubmit");
+          //}
+          userExists = await verifyUserByEmail(vendorInfo.email);
           if (userExists) {
             handleErrorInfo(
               "email",
@@ -672,25 +669,21 @@ const UserAuthDialogComponent = ({
       } else if (!customerInfo.email.endsWith("@gmail.com")) {
         handleErrorInfo("email", "Couldn't find your account");
       } else {
-        setLoadingScreen(true);
-        let userExists = false;
-        if (executeRecaptcha) {
-          const captchaToken = await executeRecaptcha("inquirySubmit");
-          userExists = await verifyUserByEmail(
-            customerInfo.email,
-            captchaToken
-          );
-        }
-        if (userExists) {
-          handleErrorInfo(
-            "email",
-            "Account already exists. Please login to continue!"
-          );
-        } else {
-          handleErrorInfo("email", "");
-        }
-        setLoadingScreen(false);
-      }
+  setLoadingScreen(true);
+  let userExists = false;
+  
+  userExists = await verifyUserByEmail(customerInfo.email);
+  
+  if (userExists) {
+    handleErrorInfo(
+      "email",
+      "Account already exists. Please login to continue!"
+    );
+  } else {
+    handleErrorInfo("email", "");
+  }
+  setLoadingScreen(false);
+}
       if (!customerInfo.phone) {
         handleErrorInfo("phone", "Phone number is Required");
       } else if (!/^\+(?:[0-9] ?){6,14}[0-9]$/.test(customerInfo.phone)) {

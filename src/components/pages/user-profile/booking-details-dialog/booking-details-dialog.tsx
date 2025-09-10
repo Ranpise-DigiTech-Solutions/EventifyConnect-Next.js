@@ -329,7 +329,7 @@ const BookingDetailsDialogComponent = ({
   userType,
   vendorType,
 }: Props) => {
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  //const { executeRecaptcha } = useGoogleReCaptcha();
   const [currentActiveTab, setCurrentActiveTab] = useState<0 | 1 | 2 | 3>(0);
   const dataStore = useAppSelector((state: RootState) => state.dataInfo); // CITIES, EVENT_TYPES & VENDOR_TYPES data
   const [isFormTwoDisabled, setIsFormTwoDisabled] = useState<boolean>(true);
@@ -618,9 +618,9 @@ const BookingDetailsDialogComponent = ({
   console.log("other vendors", otherVendorTransferListTargetKeys);
 
   useEffect(() => {
-    if (!executeRecaptcha) {
-      return;
-    }
+    // if (!executeRecaptcha) {
+    //   return;
+    // }
 
     const fetchBookingDetails = async () => {
       setIsScreenLoading(true);
@@ -630,13 +630,13 @@ const BookingDetailsDialogComponent = ({
         //     ? "hallBookingMaster"
         //     : "bookingMaster"
         // }
-        const captchaToken = await executeRecaptcha("inquirySubmit");
+        //const captchaToken = await executeRecaptcha("inquirySubmit");
         const URL = `/api/routes/bookingMaster/${currentBooking._id}/?userType=${userType}`;
 
         const response = await axios.get(URL, {
           headers: {
             "Content-Type": "application/json",
-            "X-Captcha-Token": captchaToken,
+            //"X-Captcha-Token": captchaToken,
           },
           withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
         });
@@ -666,16 +666,16 @@ const BookingDetailsDialogComponent = ({
     if (currentBooking._id) {
       fetchBookingDetails();
     }
-  }, [currentBooking, executeRecaptcha]);
+  }, [currentBooking]);
 
   const handleUpdateFormTwo = async () => {
-    if (!executeRecaptcha) {
-      setAlertDialog(true);
-      return;
-    }
+    // if (!executeRecaptcha) {
+    //   setAlertDialog(true);
+    //   return;
+    // }
     setIsScreenLoading(true);
     try {
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+      //const captchaToken = await executeRecaptcha("inquirySubmit");
 
       if (!bookingDetails._id) {
         // @TODO: handle error condition
@@ -697,7 +697,7 @@ const BookingDetailsDialogComponent = ({
         {
           headers: {
             "Content-Type": "application/json",
-            "X-Captcha-Token": captchaToken,
+            //"X-Captcha-Token": captchaToken,
           },
           withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
         }
@@ -725,13 +725,13 @@ const BookingDetailsDialogComponent = ({
   };
 
   const handleUpdateFormThree = async () => {
-    if (!executeRecaptcha) {
-      setAlertDialog(true);
-      return;
-    }
+    // if (!executeRecaptcha) {
+    //   setAlertDialog(true);
+    //   return;
+    // }
     setIsScreenLoading(true);
     try {
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+      //const captchaToken = await executeRecaptcha("inquirySubmit");
 
       if (!bookingDetails._id) {
         // @TODO: handle error condition
@@ -748,7 +748,7 @@ const BookingDetailsDialogComponent = ({
         {
           headers: {
             "Content-Type": "application/json",
-            "X-Captcha-Token": captchaToken,
+            //"X-Captcha-Token": captchaToken,
           },
           withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
         }
@@ -776,13 +776,13 @@ const BookingDetailsDialogComponent = ({
   };
 
   const handleUpdateFormFour = async () => {
-    if (!executeRecaptcha) {
-      setAlertDialog(true);
-      return;
-    }
+    // if (!executeRecaptcha) {
+    //   setAlertDialog(true);
+    //   return;
+    // }
     setIsScreenLoading(true);
     try {
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+      //const captchaToken = await executeRecaptcha("inquirySubmit");
 
       if (!bookingDetails._id) {
         // @TODO: handle error condition
@@ -808,7 +808,7 @@ const BookingDetailsDialogComponent = ({
         {
           headers: {
             "Content-Type": "application/json",
-            "X-Captcha-Token": captchaToken,
+            //"X-Captcha-Token": captchaToken,
           },
           withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
         }
@@ -836,9 +836,9 @@ const BookingDetailsDialogComponent = ({
   };
 
   useEffect(() => {
-    if (!executeRecaptcha) {
-      return;
-    }
+    // if (!executeRecaptcha) {
+    //   return;
+    // }
     if (
       (!bookingDetails.hallData._id && !bookingDetails.customerData._id) ||
       bookingStatusMsg.error
@@ -847,7 +847,7 @@ const BookingDetailsDialogComponent = ({
     }
 
     const checkBookingSlotAvailability = async () => {
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+      //const captchaToken = await executeRecaptcha("inquirySubmit");
 
       if (
         !bookingDetails.bookingStartDate ||
@@ -890,7 +890,7 @@ const BookingDetailsDialogComponent = ({
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -912,7 +912,7 @@ const BookingDetailsDialogComponent = ({
     };
 
     checkBookingSlotAvailability();
-  }, [triggerSlotAvailabilityCheck, executeRecaptcha]);
+  }, [triggerSlotAvailabilityCheck]);
 
   const handleBookingStartDateChange = (
     event: React.ChangeEvent<HTMLInputElement>

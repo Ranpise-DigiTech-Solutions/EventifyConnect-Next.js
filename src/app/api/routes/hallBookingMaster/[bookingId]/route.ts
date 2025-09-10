@@ -14,40 +14,40 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { bookingId: string } }
 ) {
-  const captchaToken = req.headers.get("X-Captcha-Token");
+  // const captchaToken = req.headers.get("X-Captcha-Token");
   const bookingId = params.bookingId;
   const { searchParams } = new URL(req.url);
   const userType = searchParams.get("userType") || null;
 
-  if (!captchaToken) {
-    return new Response(JSON.stringify({ message: "Missing captcha token!" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  // if (!captchaToken) {
+  //   return new Response(JSON.stringify({ message: "Missing captcha token!" }), {
+  //     status: 401,
+  //     headers: { "Content-Type": "application/json" },
+  //   });
+  // }
 
-  // check weather the user is valid
-  const reCaptchaResponse = await axios({
-    method: "POST",
-    url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
-    data: {
-      token: captchaToken,
-    },
-    headers: {
-      Accept: "application/json, text/plain, */*",
-      "Content-Type": "application/json",
-    },
-  });
+  // // check weather the user is valid
+  // const reCaptchaResponse = await axios({
+  //   method: "POST",
+  //   url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
+  //   data: {
+  //     token: captchaToken,
+  //   },
+  //   headers: {
+  //     Accept: "application/json, text/plain, */*",
+  //     "Content-Type": "application/json",
+  //   },
+  // });
 
-  if (reCaptchaResponse.data.success === false) {
-    return new Response(
-      JSON.stringify({ message: "Invalid reCAPTCHA response" }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  }
+  // if (reCaptchaResponse.data.success === false) {
+  //   return new Response(
+  //     JSON.stringify({ message: "Invalid reCAPTCHA response" }),
+  //     {
+  //       status: 400,
+  //       headers: { "Content-Type": "application/json" },
+  //     }
+  //   );
+  // }
 
   if (!userType || !bookingId) {
     return new Response(

@@ -1,51 +1,51 @@
+// src/app/api/routes/countriesNow/getCitiesOfCountry/route.ts
+
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import axios from "axios";
 
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const countryName = searchParams.get("countryName");
+    const { countryName } = await req.json();
 
-    if (!countryName) {
-      return new Response(JSON.stringify({ error: "Missing session ID" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const apiURL = `https://countriesnow.space/api/v0.1/countries`;
-
-    const response = await axios.get(apiURL);
-
-    if (!response) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "Bad Gateway! Received Invalid response from CountriesNow Server",
-        }),
-        {
-          status: 502,
-          headers: { "Content-Type": "application/json" },
-        }
+    if (!countryName || countryName.trim() === "") {
+      return NextResponse.json(
+        { error: "Missing or invalid country name" },
+        { status: 400 }
       );
     }
 
-    const formatCity = (city: any, country: any) => `${city}, ${country}`;
-    const indianCities = response.data.data
-      .filter(({ country }: { country: any }) => country === countryName)
-      .map(({ country, cities }: { country: any; cities: any }) =>
-        cities.map((city: any) => formatCity(city, country))
-      )
-      .flat();
+    const apiURL = `https://countriesnow.space/api/v0.1/countries/cities`;
+    const reqBody = { country: countryName };
 
-    return new Response(JSON.stringify(indianCities), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    try {
+      const response = await axios.post(apiURL, reqBody);
+
+      if (!response?.data?.data) {
+        console.error("Invalid response from CountriesNow API:", response.data);
+        return NextResponse.json(
+          { error: "Bad Gateway! Received invalid response from CountriesNow Server" },
+          { status: 502 }
+        );
+      }
+
+      const cities: string[] = response.data.data || [];
+      return NextResponse.json(cities, { status: 200 });
+    } catch (axiosError) {
+      if (axios.isAxiosError(axiosError)) {
+        console.error("Error from CountriesNow API:", axiosError.response?.data);
+        return NextResponse.json(
+          { error: "External API Error", details: axiosError.response?.data || axiosError.message },
+          { status: axiosError.response?.status || 502 }
+        );
+      }
+      throw axiosError;
+    }
   } catch (error) {
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    console.error("Unhandled error in getCitiesOfCountry API:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

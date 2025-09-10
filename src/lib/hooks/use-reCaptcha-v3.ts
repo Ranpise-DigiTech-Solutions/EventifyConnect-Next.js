@@ -12,7 +12,7 @@ const useRecaptcha = () => {
       if(!executeRecaptcha) {
         return null;
       } else {
-        const token = await executeRecaptcha('inquirySubmit');
+        //const token = await executeRecaptcha('inquirySubmit');
         setToken(token);
       }
     }

@@ -1,70 +1,45 @@
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import axios from "axios";
 
-export async function GET(req: NextRequest) {
+// ⚠️ Change the handler from GET to POST
+export async function POST(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const countryName = searchParams.get("countryName");
+    // ✅ Retrieve countryName from the request body for a POST request
+    const { countryName } = await req.json();
 
-    if(!countryName) {
-        return new Response(
-            JSON.stringify({
-              error:
-                "Invalid country name!",
-            }),
-            {
-              status: 404,
-              headers: { "Content-Type": "application/json" },
-            }
-          );  
+    if (!countryName || countryName.trim() === "") {
+      return NextResponse.json(
+        { error: "Missing or invalid country name" },
+        { status: 400 }
+      );
     }
 
     const apiURL = `https://countriesnow.space/api/v0.1/countries/states`;
-
-    const reqBody = {
-      country: countryName,
-    };
+    const reqBody = { country: countryName };
 
     const response = await axios.post(apiURL, reqBody);
 
-    if (!response) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "Bad Gateway! Received Invalid response from CountriesNow Server",
-        }),
-        {
-          status: 502,
-          headers: { "Content-Type": "application/json" },
-        }
+    if (!response?.data?.data) {
+      return NextResponse.json(
+        { error: "Bad Gateway! Invalid response from CountriesNow Server" },
+        { status: 502 }
       );
     }
 
-    const states: Array<any> = [];
-
-    response.data.data?.states?.map((state: any) => states.push(state?.name));
+    const states: string[] =
+      response.data.data.states?.map((state: any) => state?.name).filter(Boolean) || [];
 
     if (states.length === 0) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "Bad Gateway! Received Invalid response from CountriesNow Server",
-        }),
-        {
-          status: 502,
-          headers: { "Content-Type": "application/json" },
-        }
+      return NextResponse.json(
+        { error: "Bad Gateway! No states returned from CountriesNow Server" },
+        { status: 502 }
       );
     }
 
-    return new Response(JSON.stringify(states), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json(states, { status: 200 });
   } catch (error) {
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    console.error("Unhandled error in getStates API:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

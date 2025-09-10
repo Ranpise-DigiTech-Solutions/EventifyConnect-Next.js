@@ -2,7 +2,7 @@
 
 import { Skeleton } from "antd";
 import { useEffect, useState, useRef } from "react";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
@@ -18,23 +18,21 @@ import { SortCardsBasedOnAvailability } from "@/lib/utils/functions";
 type Props = {};
 
 const PackagesComponent = (props: Props) => {
-  const { executeRecaptcha } = useGoogleReCaptcha();
-  const [activeFilter, setActiveFilter] = useState("Available"); // Current Active Filter
-  const [animateCard, setAnimateCard] = useState({ y: 0, opacity: 1 }); // Card Animation when clicked on TAGS
-  const [filteredCards, setFilteredCards] = useState<Array<any>>([]); // Filtering cards based on the TAGS..Ex: Most Popular, Top Rated etc..
-
+  //const { executeRecaptcha } = useGoogleReCaptcha();
+  const [activeFilter, setActiveFilter] = useState("Available");
+  const [animateCard, setAnimateCard] = useState({ y: 0, opacity: 1 });
+  const [filteredCards, setFilteredCards] = useState<Array<any>>([]);
   const cardsPerPage = 6;
-  const [totalCardCount, setTotalCardCount] = useState<number>(0); // set it according to data fetched from database
-  const [totalPages, setTotalPages] = useState<number>(0); // set it according to data fetched from database
-  const [isLoading, setIsLoading] = useState<boolean>(true); // set it according to data fetched from database
-
+  const [totalCardCount, setTotalCardCount] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   const searchBoxFilterStore = useSelector(
     (state: RootState) => state.searchBoxFilter
-  ); // searchBoxFilterStore react-redux
-  const dataStore = useSelector((state: RootState) => state.dataInfo); // dataStore react-redux
+  );
+  const dataStore = useSelector((state: RootState) => state.dataInfo);
 
   const handlePageChange = (pageNumber: number) => {
     if (pageNumber !== currentPage) {
@@ -45,15 +43,13 @@ const PackagesComponent = (props: Props) => {
 
   useEffect(() => {
     console.log("Entered");
-    if (!executeRecaptcha) {
-      return;
-    }
+    // if (!executeRecaptcha) {
+    //   return;
+    // }
 
-    // @TODO: rewrite this func
     const getEventId = async () => {
       try {
         if (searchBoxFilterStore.eventType) {
-          // if user has chosen a event return its ID.. else return NULL
           if (dataStore.eventTypes.data.length === 0) {
             return null;
           }
@@ -63,7 +59,7 @@ const PackagesComponent = (props: Props) => {
 
           return eventId;
         }
-        return null; // if NULL is returned ...then the event filter wont be applied in the backend
+        return null;
       } catch (error) {
         console.error("Error fetching data:", error);
         return null;
@@ -72,94 +68,106 @@ const PackagesComponent = (props: Props) => {
 
     const fetchData = async () => {
       setIsLoading(true);
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+
+      //if (!executeRecaptcha) {
+        //setIsLoading(false);
+        //console.error("reCAPTCHA not initialized.");
+        //return;
+      //}
+
+      //const captchaToken = await executeRecaptcha("inquirySubmit");
       const today = new Date();
       const formattedDate = format(today, "yyyy-MM-dd");
-      const eventId = await getEventId();
+
       const selectedCityName = searchBoxFilterStore.cityName
-        .split(",")[0]
-        .trim();
-      const selectedDate = searchBoxFilterStore.bookingDate;
+        ? searchBoxFilterStore.cityName.split(",")[0].trim()
+        : '';
+      const selectedDate = searchBoxFilterStore.bookingDate || formattedDate;
+      const eventId = await getEventId();
+
+      // 💡 FIX: Add a guard clause here to check if selectedCityName is valid.
+      if (!selectedCityName) {
+        console.error("City name is missing. Skipping API call.");
+        setIsLoading(false);
+        setFilteredCards([]); // Clear previous results
+        setTotalCardCount(0); // Reset total count
+        setTotalPages(0); // Reset total pages
+        return;
+      }
+
+      let URL = "";
+      switch (searchBoxFilterStore.vendorType) {
+        case "Banquet Hall":
+          URL = "/api/routes/hallBookingMaster/getHallsAvailabilityStatus/";
+          break;
+        case "Photographer":
+          URL = "/api/routes/photographerMaster/getFilteredList/";
+          break;
+        default:
+          console.error("Invalid or empty vendor type provided.");
+          setIsLoading(false);
+          setFilteredCards([]);
+          return;
+      }
+
+      const params: { [key: string]: any } = {
+        selectedCity: selectedCityName,
+        selectedDate: selectedDate,
+        filter: activeFilter,
+        page: currentPage - 1,
+        limit: cardsPerPage,
+      };
+
+      if (eventId) {
+        params.eventId = eventId;
+      }
+
+      console.log("Request URL:", URL);
+      console.log("Request Params:", params);
+
       try {
-        let URL = "";
-        let PARAMS: {
-          selectedCity: string;
-          selectedDate?: Date;
-          eventId: string;
-          filter: string;
-          page: number;
-          limit: number;
-        } = {
-          selectedCity: selectedCityName ? selectedCityName : "Mangalore",
-          eventId: eventId,
-          filter: activeFilter,
-          page: currentPage - 1,
-          limit: cardsPerPage,
-        };
-
-        switch (searchBoxFilterStore.vendorType) {
-          case "":
-          case "Banquet Hall":
-            URL = "/api/routes/hallBookingMaster/getHallsAvailabilityStatus/";
-            PARAMS = {
-              ...PARAMS,
-              selectedDate: selectedDate ? selectedDate : formattedDate,
-            };
-            break;
-          case "Photographer":
-            URL = "/api/routes/photographerMaster/getFilteredList/";
-            break;
-          default:
-            return;
-        }
-
         const response = await axios.get(URL, {
-          params: PARAMS,
+          params,
           headers: {
-            "Content-Type": "application/json",
-            "X-Captcha-Token": captchaToken,
+            
           },
-          withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
+          withCredentials: true,
         });
 
-        console.log(response);
-
-        if (
-          searchBoxFilterStore.vendorType === "Banquet Hall" &&
-          activeFilter === "Available"
-        ) {
-          const filteredCardsBasedOnAvailability = SortCardsBasedOnAvailability(
-            response.data?.data
-          );
+        if (searchBoxFilterStore.vendorType === "Banquet Hall" && activeFilter === "Available") {
+          const filteredCardsBasedOnAvailability = SortCardsBasedOnAvailability(response.data?.data);
           setFilteredCards(filteredCardsBasedOnAvailability);
         } else {
           setFilteredCards(response.data?.data);
         }
+
         setTotalCardCount(response.data?.totalCount);
         setTotalPages(Math.ceil(response.data?.totalCount / cardsPerPage));
-        setIsLoading(false); // To hide the loading spinner
+        setIsLoading(false);
       } catch (error) {
         setIsLoading(false);
         console.error("Error fetching data:", error);
+
+        if (axios.isAxiosError(error) && error.response) {
+          console.error("Server Response:", error.response.data);
+          console.error("Status Code:", error.response.status);
+        }
       }
     };
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchBoxFilterStore, activeFilter, executeRecaptcha, currentPage]);
 
-  // To provide the scroll effect when the cards change
+    fetchData();
+  }, [searchBoxFilterStore, activeFilter, currentPage]);
+
   useEffect(() => {
     if (wrapperRef.current) {
       const { top } = wrapperRef.current.getBoundingClientRect();
-      // Scroll to the top of the wrapper element relative to the viewport
       window.scrollTo({ top: window.scrollY + top, behavior: "smooth" });
     }
   }, [currentPage]);
 
   const handleCardFilter = (item: string) => {
-    // Filtering Criteria to be passed in arguments ...Ex: Most Popular, Top Rated etc...
-    setActiveFilter(item); // Set Active Filter
-    setAnimateCard({ y: 100, opacity: 0 }); //to get the shuffled animation of the cards
+    setActiveFilter(item);
+    setAnimateCard({ y: 100, opacity: 0 });
     setTimeout(() => {
       setAnimateCard({ y: 0, opacity: 1 });
     }, 500);
@@ -224,7 +232,7 @@ const PackagesComponent = (props: Props) => {
             >
               <PackagesCard
                 card={{
-                  _id: card.hallId || '',
+                  _id: card.hallId || "",
                   vendorImages: card.hallImages || [],
                   vendorDescription: card.hallDescription || "",
                   companyName: card.hallName || "",
@@ -246,11 +254,11 @@ const PackagesComponent = (props: Props) => {
         return filteredCards.map((card: PackagesCardDataType, index) => (
           <div className={styles.card} key={index}>
             <div
-              // href={{
-              //   pathname: "/photographer-description",
-              //   search: `?photographerId=${card._id}`,
-              // }}
-              // target="_blank"
+            // href={{
+            //   pathname: "/photographer-description",
+            //   search: `?photographerId=${card._id}`,
+            // }}
+            // target="_blank"
             >
               <PackagesCard
                 card={{
@@ -274,7 +282,6 @@ const PackagesComponent = (props: Props) => {
     const pageNumbers = [];
 
     if (totalPages <= 3) {
-      // Render all page numbers if less than or equal to 3
       for (let i = 1; i <= totalPages; i++) {
         pageNumbers.push(
           <div
@@ -289,8 +296,6 @@ const PackagesComponent = (props: Props) => {
         );
       }
     } else if (currentPage <= totalPages - 2) {
-      // if more than 3 and less than total 'totalpages - 1'
-
       pageNumbers.push(
         <div
           className={`${styles.counter} ${styles.selected__counter}`}
@@ -325,7 +330,6 @@ const PackagesComponent = (props: Props) => {
         </div>
       );
     } else {
-      // if page numbers are greater than 'totalpages - 2'
       pageNumbers.push(
         <div
           className={styles.counter}

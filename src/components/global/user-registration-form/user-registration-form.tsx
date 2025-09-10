@@ -46,7 +46,7 @@ type Props = {
 
 const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
   const theme = useTheme();
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  //const { executeRecaptcha } = useGoogleReCaptcha();
   // const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
 
   // // Define the Transition component with correct types
@@ -940,15 +940,15 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
     } catch (error) {
       console.error(error);
     }
-  }, [isFileUploadComplete, executeRecaptcha]);
+  }, [isFileUploadComplete]);
 
   const handleFormSubmit = async () => {
-    if (!executeRecaptcha) {
-      return;
-    }
+    //if (!executeRecaptcha) {
+      //return;
+    //}
 
     setLoadingScreen(true);
-    const captchaToken = await executeRecaptcha("inquirySubmit");
+    //const captchaToken = await executeRecaptcha("inquirySubmit");
     let data = {};
     let URL = "";
     if (userType === "VENDOR") {
@@ -1078,15 +1078,13 @@ const UserRegistrationFormComponent = ({ open, handleClose }: Props) => {
         userType === "VENDOR"
           ? await axios.post(URL, data, {
               headers: {
-                "Content-Type": "application/json",
-                "X-Captcha-Token": captchaToken,
+                "Content-Type": "application/json"
               },
               withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
             })
           : await axios.patch(URL, data, {
               headers: {
-                "Content-Type": "application/json",
-                "X-Captcha-Token": captchaToken,
+                "Content-Type": "application/json"
               },
               withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
             });

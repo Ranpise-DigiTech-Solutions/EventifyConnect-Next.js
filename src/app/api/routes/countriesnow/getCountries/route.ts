@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import axios from "axios";
 
 export async function GET(req: NextRequest) {
@@ -7,44 +8,36 @@ export async function GET(req: NextRequest) {
 
     const response = await axios.get(apiURL);
 
-    if (!response) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "Bad Gateway! Received Invalid response from CountriesNow Server",
-        }),
+    // Check for a valid response object and data structure
+    if (!response || !response.data || !response.data.data) {
+      return NextResponse.json(
         {
-          status: 502,
-          headers: { "Content-Type": "application/json" },
-        }
+          error: "Bad Gateway! Received invalid or empty response from CountriesNow API.",
+        },
+        { status: 502 }
       );
     }
 
-    const countries: Array<any> = [];
-
-    response.data.data?.map((country: any) => countries.push(country?.name));
+    // Use a direct map to get country names and filter out any invalid entries
+    const countries = response.data.data
+      .map((country: any) => country?.name)
+      .filter(Boolean); // Filters out null, undefined, or empty strings
 
     if (countries.length === 0) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "Bad Gateway! Received Invalid response from CountriesNow Server",
-        }),
+      return NextResponse.json(
         {
-          status: 502,
-          headers: { "Content-Type": "application/json" },
-        }
+          error: "Bad Gateway! Received valid response, but no country data found.",
+        },
+        { status: 502 }
       );
     }
 
-    return new Response(JSON.stringify(countries), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json(countries, { status: 200 });
   } catch (error) {
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    console.error("Error fetching countries:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

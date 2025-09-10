@@ -1,7 +1,8 @@
+// src/components/pages/home/promotion/promotion.tsx
+
 "use client";
 
 import React from "react";
-
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSpring, animated } from "react-spring";
@@ -16,6 +17,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks/use-redux-store";
 import VirtualizedSelect from "@/components/ui/virtualized-select";
 import { setSearchBoxFilterData } from "@/redux/slices/search-box-filter";
 import { RootState } from "@/redux/store";
+import { fetchCitiesOfCountry } from "@/redux/thunks/data"; // Import the thunk here
 
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import styles from "./promotion.module.scss";
@@ -42,7 +44,7 @@ function Number({ n }: { n: number }) {
 type Props = {};
 
 const Promotion = (props: Props) => {
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  //const { executeRecaptcha } = useGoogleReCaptcha();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [totalCount, setTotalCount] = useState({ ...totalCountTemplate });
 
@@ -75,13 +77,13 @@ const Promotion = (props: Props) => {
     dropdownIndicator: (provided: any) => ({
       ...provided,
       "& svg": {
-        display: "none", // Hide the default arrow icon
+        display: "none",
       },
       padding: 10,
     }),
     placeholder: (provided: any) => ({
       ...provided,
-      color: "#000000", // Change the placeholder color here
+      color: "#000000",
     }),
   };
 
@@ -100,43 +102,39 @@ const Promotion = (props: Props) => {
     return () => clearInterval(intervalId);
   }, [imageList.length]);
 
+
   useEffect(() => {
-    if (!executeRecaptcha) {
+    // if (!executeRecaptcha) {
+    //   return;
+    // }
+    const getHallVendorCount = async () => {
+  try {
+    const URL = `/api/routes/hallMaster/getHallCount/`;
+    const response: AxiosResponse<string> = await axios.get(URL, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      withCredentials: true
+    });
+
+    if (typeof response.data !== "number") {
       return;
     }
 
-    const getHallVendorCount = async () => {
-      try {
-        const captchaToken = await executeRecaptcha('inquirySubmit');
-        const URL = `/api/routes/hallMaster/getHallCount/`;
-        const response: AxiosResponse<string> = await axios.get(URL, {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Captcha-Token': captchaToken,
-          },
-          withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
-        });
-
-        if (typeof response.data !== "number") {
-          return;
-        }
-
-        handleTotalCount("hallVendors", parseInt(response.data));
-      } catch (error) {
-        console.error(error);
-      }
-    };
+    handleTotalCount("hallVendors", parseInt(response.data));
+  } catch (error) {
+    console.error(error);
+  }
+};
 
     const getOtherVendorCount = async () => {
       try {
-        const captchaToken = await executeRecaptcha('inquirySubmit');
         const URL = `/api/routes/vendorMaster/getOtherVendorsCount/`;
         const response: AxiosResponse<string> = await axios.get(URL, {
           headers: {
             'Content-Type': 'application/json',
-            'X-Captcha-Token': captchaToken,
           },
-          withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+          withCredentials: true
         });
 
         if (typeof response.data !== "number") {
@@ -150,14 +148,13 @@ const Promotion = (props: Props) => {
 
     const getCustomerCount = async () => {
       try {
-        const captchaToken = await executeRecaptcha('inquirySubmit');
+        
         const URL = `/api/routes/customerMaster/getCustomerCount/`;
         const response: AxiosResponse<string> = await axios.get(URL, {
           headers: {
             'Content-Type': 'application/json',
-            'X-Captcha-Token': captchaToken,
           },
-          withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
+          withCredentials: true
         });
 
         if (typeof response.data !== "number") {
@@ -170,31 +167,29 @@ const Promotion = (props: Props) => {
     };
 
     const getBookingCount = async () => {
-      try {
-        const captchaToken = await executeRecaptcha('inquirySubmit');
-        const URL = `/api/routes/bookingMaster/getBookingCount/`;
-        const response: AxiosResponse<string> = await axios.get(URL, {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Captcha-Token': captchaToken,
-          },
-          withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
-        });
+  try {
+    const URL = `/api/routes/bookingMaster/getBookingCount/`;
+    const response: AxiosResponse<string> = await axios.get(URL, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      withCredentials: true
+    });
 
-        if (typeof response.data !== "number") {
-          return;
-        }
-        handleTotalCount("bookings", parseInt(response.data));
-      } catch (error) {
-        console.error(error);
-      }
-    };
+    if (typeof response.data !== "number") {
+      return;
+    }
+    handleTotalCount("bookings", parseInt(response.data));
+  } catch (error) {
+    console.error(error);
+  }
+};
 
     getBookingCount();
     getHallVendorCount();
     getOtherVendorCount();
     getCustomerCount();
-  }, [executeRecaptcha]);
+  }, []);
 
   return (
     <div className={`${styles.main__container} ${styles.promotion__container}`}>
@@ -232,12 +227,13 @@ const Promotion = (props: Props) => {
                 id={"cityName"}
                 customStyles={customStyles}
                 options={
+                  // Corrected line with the safety check
                   Array.isArray(data.citiesOfCountry.data)
                     ? data.citiesOfCountry.data.map((city: any) => ({
                         value: city,
                         label: city,
                       }))
-                    : null
+                    : [] // Return an empty array instead of null
                 }
                 value={
                   searchBoxFilterStore.cityName
@@ -253,7 +249,7 @@ const Promotion = (props: Props) => {
                       key: "cityName",
                       value: selectedOption.value,
                     })
-                  ); // Update Details in 'SearchBoxFilter' Redux Store
+                  );
                 }}
                 placeholder="Select or type a city..."
                 dropDownIndicator={false}

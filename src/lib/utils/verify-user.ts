@@ -1,15 +1,15 @@
 import axios from 'axios';
 
-export const verifyUserByEmail = async (emailId: string, captchaToken: string): Promise<boolean> => {
+export const verifyUserByEmail = async (emailId: string): Promise<boolean> => {
 
     try {
+      // The API call is now made without the reCAPTCHA token header.
       const response = await axios.get(`/api/routes/userAuthentication/checkUserExistence/?emailId=${emailId}`,
         {
           headers: {
             "Content-Type": "application/json",
-            "X-Captcha-Token": captchaToken,
           },
-          withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
+          withCredentials: true, // This is kept in case it's needed for other authentication
         });
       if(response?.data?.exists === true) {
         // User exists

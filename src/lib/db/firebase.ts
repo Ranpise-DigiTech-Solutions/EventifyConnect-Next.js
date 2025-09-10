@@ -27,4 +27,7 @@ const firebaseDb = getDatabase(firebaseApp);
 const firebaseFunc = getFunctions(firebaseApp);
 const firebaseStorage = getStorage();
 
+console.log('Firebase configuration:');
+console.log(firebaseConfig);
+
 export { firebaseStorage, firebaseAuth, firestore, firebaseDb, firebaseFunc };

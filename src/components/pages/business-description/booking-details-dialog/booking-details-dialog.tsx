@@ -273,7 +273,7 @@ const BookingDetailsDialogComponent = ({
   hallData,
   serviceProviderData,
 }: Props) => {
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  //const { executeRecaptcha } = useGoogleReCaptcha();
   // const history = useHistory();
   const dataStore = useAppSelector((state: RootState) => state.dataInfo); // CITIES, EVENT_TYPES & VENDOR_TYPES data
   const bookingInfoStore = useAppSelector(
@@ -711,13 +711,13 @@ const BookingDetailsDialogComponent = ({
   };
 
   const handleFormSubmit = async () => {
-    if (!executeRecaptcha) {
-      return;
-    }
+    // if (!executeRecaptcha) {
+    //   return;
+    // }
 
     setIsLoading(true);
     try {
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+      // const captchaToken = await executeRecaptcha("inquirySubmit");
       const parsedStartDateObject: Date | null = parseDate(
         bookingInfoStore.bookingStartDate,
         "-"
@@ -774,7 +774,7 @@ const BookingDetailsDialogComponent = ({
         {
           headers: {
             "Content-Type": "application/json",
-            "X-Captcha-Token": captchaToken,
+            //"X-Captcha-Token": captchaToken,
           },
           withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
         }

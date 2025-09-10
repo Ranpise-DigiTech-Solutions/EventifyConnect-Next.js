@@ -31,6 +31,9 @@ export type PhotographersFilteredListType = {
 };
 
 export type PackagesCardDataType = {
+  vendorCuisines: any;
+  vendorMinGuests: any;
+  vendorMaxGuests: any;
   _id: string;
   vendorImages: string[];
   vendorDescription: string;
@@ -126,20 +129,106 @@ export interface PhotographerDataErrorInfoType
   vendorTravelAvailability: string;
 }
 
-export interface ReactSelectOptionType {
-    value: string | null;
-    label: string | null;
-  }
-
-  export type FilteredSearchComponentFiltersType = {
-    cityName?: string;
-    date?: string;
-    eventType?: {
-      label: string;
-      value: string;
-    };
-    vendorType?: {
-      label: string;
-      value: string;
-    };
+// Start of new types for Caterer
+export interface CatererDataType {
+  companyName: string;
+  companyAddress: string;
+  companyCity: string;
+  companyPincode: number;
+  companyState: string;
+  companyTaluk: string;
+  companyCountry: string;
+  companyLandmark: string;
+  vendorRegisterNo: string;
+  vendorRegisterDate: string;
+  vendorRegisterDocument: any;
+  vendorRegisterDocumentUrl: string;
+  vendorMainContactFirstName: string;
+  vendorMainContactLastName: string;
+  vendorMainDesignation: string;
+  vendorMainOfficeNo: string;
+  vendorMainMobileNo: string;
+  vendorMainEmail: string;
+  vendorAlternateContactFirstName: string;
+  vendorAlternateContactLastName: string;
+  vendorAlternateDesignation: string;
+  vendorAlternateOfficeNo: string;
+  vendorAlternateMobileNo: string;
+  vendorAlternateEmail: string;
+  vendorDescription: string;
+  vendorCuisines: string[];
+  vendorMinGuests: number;
+  vendorMaxGuests: number;
+  vendorServiceAreas: string[];
+  vendorExperience: number;
+  vendorCertificates: any[];
+  vendorEquipment: any[];
+  vendorPackagesOffered: any[];
+  vendorTravelAvailability: string;
+  vendorPortfolioURL: string;
+  vendorSocialMediaLinks: {
+    whatsapp: string;
+    facebook: string;
+    instagram: string;
+    twitter: string;
+    linkedin: string;
   };
+}
+
+export interface CatererDataErrorInfoType
+  extends Omit<
+    CatererDataType,
+    | "companyPincode"
+    | "vendorRegisterDate"
+    | "vendorCuisines"
+    | "vendorMinGuests"
+    | "vendorMaxGuests"
+    | "vendorServiceAreas"
+    | "vendorExperience"
+    | "vendorCertificates"
+    | "vendorEquipment"
+    | "vendorPackagesOffered"
+    | "vendorTravelAvailability"
+    | "vendorRegisterDocument"
+    | "vendorRegisterDocumentUrl"
+    | "vendorSocialMediaLinks"
+  > {
+  companyPincode: string;
+  vendorRegisterDate: string;
+  vendorCuisines: string;
+  vendorMinGuests: string;
+  vendorMaxGuests: string;
+  vendorServiceAreas: string;
+  vendorExperience: string;
+  vendorCertificates: string;
+  vendorEquipment: string;
+  vendorPackagesOffered: string;
+  vendorTravelAvailability: string;
+  vendorRegisterDocument: string;
+  vendorSocialMediaLinks: {
+    whatsapp: string;
+    facebook: string;
+    instagram: string;
+    twitter: string;
+    linkedin: string;
+  };
+}
+// End of new types
+
+export interface ReactSelectOptionType {
+  value: string | null;
+  label: string | null;
+}
+
+export type FilteredSearchComponentFiltersType = {
+  cityName?: string;
+  date?: string;
+  eventType?: {
+    label: string;
+    value: string;
+  };
+  vendorType?: {
+    label: string;
+    value: string;
+  };
+};

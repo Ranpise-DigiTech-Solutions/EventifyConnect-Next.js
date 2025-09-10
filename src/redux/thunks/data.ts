@@ -1,100 +1,81 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
-import {
-  fetchCountriesRequest,
-  fetchCountriesSuccess,
-  fetchCountriesFailure,
-  fetchStatesRequest,
-  fetchStatesSuccess,
-  fetchStatesFailure,
-  fetchCitiesOfCountryRequest,
-  fetchCitiesOfCountrySuccess,
-  fetchCitiesOfCountryFailure,
-  fetchCitiesOfStateRequest,
-  fetchCitiesOfStateSuccess,
-  fetchCitiesOfStateFailure,
-  fetchEventTypesRequest,
-  fetchEventTypesSuccess,
-  fetchEventTypesFailure,
-  fetchVendorTypesRequest,
-  fetchVendorTypesSuccess,
-  fetchVendorTypesFailure,
-} from '@/redux/slices/data';
 
 export const fetchCountries = createAsyncThunk(
-  'userInfo/fetchCountries',
-  async (_, { dispatch }) => {
-    dispatch(fetchCountriesRequest());
+  'data/fetchCountries',
+  async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get('/api/routes/countriesNow/getCountries/');
-      dispatch(fetchCountriesSuccess(response.data));
+      return response.data;
     } catch (error: any) {
-      dispatch(fetchCountriesFailure(`Error fetching countries: ${error.message}`));
+      return rejectWithValue(`Error fetching countries: ${error.message}`);
     }
   }
 );
 
 export const fetchStates = createAsyncThunk(
-  'userInfo/fetchStates',
-  async ({ countryName }: { countryName: string }, { dispatch }) => {
-    dispatch(fetchStatesRequest());
+  'data/fetchStates',
+  async ({ countryName }: { countryName: string }, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`/api/routes/countriesNow/getStates/?countryName=${countryName}`);
-      dispatch(fetchStatesSuccess(response.data));
+      const URL = '/api/routes/countriesNow/getStates';
+      // ✅ Corrected: Use axios.post and send data in the body
+      const response = await axios.post(URL, { countryName });
+      return response.data;
     } catch (error: any) {
-      dispatch(fetchStatesFailure(`Error fetching states: ${error.message}`));
+      return rejectWithValue(`Error fetching states: ${error.message}`);
     }
   }
 );
 
 export const fetchCitiesOfCountry = createAsyncThunk(
-  'userInfo/fetchCitiesOfCountry',
-  async ({ countryName }: { countryName: string }, { dispatch }) => {
-    dispatch(fetchCitiesOfCountryRequest());
+  'data/fetchCitiesOfCountry',
+  async ({ countryName }: { countryName: string }, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`/api/routes/countriesNow/getCitiesOfCountry/?countryName=${countryName}`);
-      dispatch(fetchCitiesOfCountrySuccess(response.data));
+      const URL = '/api/routes/countriesNow/getCitiesOfCountry';
+      
+      // ✅ This is the crucial change: Use axios.post and pass the data in the body.
+      const response = await axios.post(URL, { countryName });
+      
+      return response.data;
     } catch (error: any) {
-      dispatch(fetchCitiesOfCountryFailure(`Error fetching cities: ${error.message}`));
+      return rejectWithValue(`Error fetching cities: ${error.message}`);
     }
   }
 );
-
 export const fetchCitiesOfState = createAsyncThunk(
-  'userInfo/fetchCitiesOfState',
-  async ({ countryName, stateName }: { countryName: string; stateName: string }, { dispatch }) => {
-    dispatch(fetchCitiesOfStateRequest());
+  'data/fetchCitiesOfState',
+  async ({ countryName, stateName }: { countryName: string; stateName: string }, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`/api/routes/countriesNow/getCitiesOfState/?countryName=${countryName}&stateName=${stateName}`);
-      dispatch(fetchCitiesOfStateSuccess(response.data));
+      const URL = '/api/routes/countriesNow/getCitiesOfState';
+      // ✅ Corrected to use POST method
+      const response = await axios.post(URL, { countryName, stateName });
+      return response.data;
     } catch (error: any) {
-      dispatch(fetchCitiesOfStateFailure(`Error fetching cities: ${error.message}`));
+      return rejectWithValue(`Error fetching cities: ${error.message}`);
     }
   }
 );
 
 export const fetchEventTypes = createAsyncThunk(
-  'userInfo/fetchEventTypes',
-  async (_, { dispatch }) => {
-    dispatch(fetchEventTypesRequest());
+  'data/fetchEventTypes',
+  async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get('/api/routes/eventTypes/');
-      dispatch(fetchEventTypesSuccess(response.data));
+      return response.data;
     } catch (error: any) {
-      dispatch(fetchEventTypesFailure(`Error fetching event types: ${error.message}`));
+      return rejectWithValue(`Error fetching event types: ${error.message}`);
     }
   }
 );
 
 export const fetchVendorTypes = createAsyncThunk(
-  'userInfo/fetchVendorTypes',
-  async (_, { dispatch }) => {
-    dispatch(fetchVendorTypesRequest());
+  'data/fetchVendorTypes',
+  async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get('/api/routes/vendorTypes/');
-      dispatch(fetchVendorTypesSuccess(response.data));
+      return response.data;
     } catch (error: any) {
-      dispatch(fetchVendorTypesFailure(`Error fetching vendor types: ${error.message}`));
+      return rejectWithValue(`Error fetching vendor types: ${error.message}`);
     }
   }
 );

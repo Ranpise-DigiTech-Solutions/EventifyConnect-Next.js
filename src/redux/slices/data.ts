@@ -1,147 +1,119 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+// src/redux/slices/data.ts
+import { createSlice } from '@reduxjs/toolkit';
+import {
+  fetchCountries,
+  fetchStates,
+  fetchCitiesOfCountry,
+  fetchCitiesOfState,
+  fetchEventTypes,
+  fetchVendorTypes,
+} from '../thunks/data';
 
+// Define the initial state for the data slice
 const initialState: any = {
-  countries: {
-    data: [],
-    loading: false,
-    error: null,
-  },
-  states: {
-    data: [],
-    loading: false,
-    error: null,
-  },
-  citiesOfCountry: {
-    data: [],
-    loading: false,
-    error: null,
-  },
-  citiesOfState: {
-    data: [],
-    loading: false,
-    error: null,
-  },
-  eventTypes: {
-    data: [],
-    loading: false,
-    error: null,
-  },
-  vendorTypes: {
-    data: [],
-    loading: false,
-    error: null,
-  },
+  countries: { data: [], loading: false, error: null },
+  states: { data: [], loading: false, error: null },
+  citiesOfCountry: { data: [], loading: false, error: null },
+  citiesOfState: { data: [], loading: false, error: null },
+  eventTypes: { data: [], loading: false, error: null },
+  vendorTypes: { data: [], loading: false, error: null },
 };
 
-const userInfoSlice = createSlice({
-  name: 'userInfo',
+const dataSlice = createSlice({
+  name: 'dataInfo',
   initialState,
-  reducers: {
-    // Add reducers for countries
-    fetchCountriesRequest(state) {
+  reducers: {},
+  extraReducers: (builder) => {
+    // --- Reducers for fetchCountries ---
+    builder.addCase(fetchCountries.pending, (state) => {
       state.countries.loading = true;
       state.countries.error = null;
-    },
-    fetchCountriesSuccess(state, action: PayloadAction<any>) {
+    });
+    builder.addCase(fetchCountries.fulfilled, (state, action) => {
       state.countries.loading = false;
-      state.countries.data = action.payload;
-    },
-    fetchCountriesFailure(state, action: PayloadAction<any>) {
+      // ⚠ CORRECTED: Assign action.payload directly
+      state.countries.data = action.payload; 
+    });
+    builder.addCase(fetchCountries.rejected, (state, action) => {
       state.countries.loading = false;
-      state.countries.error = action.payload;
-    },
+      state.countries.error = action.error.message;
+    });
 
-    // Add reducers for states.
-    fetchStatesRequest(state) {
+    // --- Reducers for fetchStates ---
+    builder.addCase(fetchStates.pending, (state) => {
       state.states.loading = true;
       state.states.error = null;
-    },
-    fetchStatesSuccess(state, action: PayloadAction<any>) {
+    });
+    builder.addCase(fetchStates.fulfilled, (state, action) => {
       state.states.loading = false;
+      // ⚠ CORRECTED: Assign action.payload directly
       state.states.data = action.payload;
-    },
-    fetchStatesFailure(state, action: PayloadAction<any>) {
+    });
+    builder.addCase(fetchStates.rejected, (state, action) => {
       state.states.loading = false;
-      state.states.error = action.payload;
-    },
-
-    // Add reducers for cities of a country
-    fetchCitiesOfCountryRequest(state) {
+      state.states.error = action.error.message;
+    });
+    
+    // --- Reducers for fetchCitiesOfCountry ---
+    builder.addCase(fetchCitiesOfCountry.pending, (state) => {
       state.citiesOfCountry.loading = true;
       state.citiesOfCountry.error = null;
-    },
-    fetchCitiesOfCountrySuccess(state, action: PayloadAction<any>) {
+    });
+    builder.addCase(fetchCitiesOfCountry.fulfilled, (state, action) => {
       state.citiesOfCountry.loading = false;
+      // ⚠ CORRECTED: Assign action.payload directly
       state.citiesOfCountry.data = action.payload;
-    },
-    fetchCitiesOfCountryFailure(state, action: PayloadAction<any>) {
+    });
+    builder.addCase(fetchCitiesOfCountry.rejected, (state, action) => {
       state.citiesOfCountry.loading = false;
-      state.citiesOfCountry.error = action.payload;
-    },
+      state.citiesOfCountry.error = action.error.message;
+    });
 
-    // Add reducers for cities of a state
-    fetchCitiesOfStateRequest(state) {
+    // --- Reducers for fetchCitiesOfState ---
+    builder.addCase(fetchCitiesOfState.pending, (state) => {
       state.citiesOfState.loading = true;
       state.citiesOfState.error = null;
-    },
-    fetchCitiesOfStateSuccess(state, action: PayloadAction<any>) {
+    });
+    builder.addCase(fetchCitiesOfState.fulfilled, (state, action) => {
       state.citiesOfState.loading = false;
+      // ⚠ CORRECTED: Assign action.payload directly
       state.citiesOfState.data = action.payload;
-    },
-    fetchCitiesOfStateFailure(state, action: PayloadAction<any>) {
+    });
+    builder.addCase(fetchCitiesOfState.rejected, (state, action) => {
       state.citiesOfState.loading = false;
-      state.citiesOfState.error = action.payload;
-    },
+      state.citiesOfState.error = action.error.message;
+    });
 
-    // Add reducers for event types
-    fetchEventTypesRequest(state) {
+    // --- Reducers for fetchEventTypes ---
+    builder.addCase(fetchEventTypes.pending, (state) => {
       state.eventTypes.loading = true;
       state.eventTypes.error = null;
-    },
-    fetchEventTypesSuccess(state, action: PayloadAction<any>) {
+    });
+    builder.addCase(fetchEventTypes.fulfilled, (state, action) => {
       state.eventTypes.loading = false;
+      // ⚠ CORRECTED: Assign action.payload directly
       state.eventTypes.data = action.payload;
-    },
-    fetchEventTypesFailure(state, action: PayloadAction<any>) {
+    });
+    builder.addCase(fetchEventTypes.rejected, (state, action) => {
       state.eventTypes.loading = false;
-      state.eventTypes.error = action.payload;
-    },
+      state.eventTypes.error = action.error.message;
+    });
 
-    // Add reducers for vendor types
-    fetchVendorTypesRequest(state) {
+    // --- Reducers for fetchVendorTypes ---
+    builder.addCase(fetchVendorTypes.pending, (state) => {
       state.vendorTypes.loading = true;
       state.vendorTypes.error = null;
-    },
-    fetchVendorTypesSuccess(state, action: PayloadAction<any>) {
+    });
+    builder.addCase(fetchVendorTypes.fulfilled, (state, action) => {
       state.vendorTypes.loading = false;
+      // ⚠ CORRECTED: Assign action.payload directly
       state.vendorTypes.data = action.payload;
-    },
-    fetchVendorTypesFailure(state, action: PayloadAction<any>) {
+    });
+    builder.addCase(fetchVendorTypes.rejected, (state, action) => {
       state.vendorTypes.loading = false;
-      state.vendorTypes.error = action.payload;
-    },
+      state.vendorTypes.error = action.error.message;
+    });
   },
 });
 
-export const {
-  fetchCountriesRequest,
-  fetchCountriesFailure,
-  fetchCountriesSuccess,
-  fetchStatesFailure,
-  fetchStatesRequest,
-  fetchStatesSuccess,
-  fetchCitiesOfCountryFailure,
-  fetchCitiesOfCountryRequest,
-  fetchCitiesOfCountrySuccess,
-  fetchCitiesOfStateFailure,
-  fetchCitiesOfStateRequest,
-  fetchCitiesOfStateSuccess,
-  fetchEventTypesFailure,
-  fetchEventTypesRequest,
-  fetchEventTypesSuccess,
-  fetchVendorTypesFailure,
-  fetchVendorTypesRequest,
-  fetchVendorTypesSuccess,
-} = userInfoSlice.actions;
-
-export default userInfoSlice.reducer;
+export default dataSlice.reducer;

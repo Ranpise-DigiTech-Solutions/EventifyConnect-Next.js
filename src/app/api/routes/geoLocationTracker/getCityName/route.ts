@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,34 +10,38 @@ export async function GET(req: NextRequest) {
     const hereApiKey = process.env.HERE_API_KEY;
 
     if (!latitude || !longitude) {
-      return new Response(
-        JSON.stringify({ message: "Required body attachment missing!" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
+      return NextResponse.json(
+        { message: "Required body attachment missing!" },
+        { status: 400 }
       );
     }
 
     const apiUrl = `https://revgeocode.search.hereapi.com/v1/revgeocode?at=${latitude},${longitude}&apiKey=${hereApiKey}&appCode=${hereAppId}`;
-    fetch(apiUrl)
-      .then(response => response.json())
-      .then(data => {
+    
+    // ⚠️ Corrected asynchronous handling: await the fetch call
+    const response = await fetch(apiUrl);
+    const data = await response.json();
 
-        const cityName = data["items"][0]["address"]["city"];
-        const countryName = data["items"][0]["address"]["countryName"];
-        return new Response(JSON.stringify(cityName + ", " + countryName), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
+    // ⚠️ Check for valid data before trying to access it
+    if (!data || !data.items || data.items.length === 0) {
+      return NextResponse.json(
+        { message: "Could not retrieve location data." },
+        { status: 502 }
+      );
+    }
 
-      })
-
-   
-  } catch (error) {
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
+    const cityName = data.items[0].address.city;
+    const countryName = data.items[0].address.countryName;
+    
+    // ⚠️ Return the final processed data
+    return NextResponse.json(`${cityName}, ${countryName}`, {
+      status: 200,
     });
+  } catch (error) {
+    console.error("Error in reverse geocoding API:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

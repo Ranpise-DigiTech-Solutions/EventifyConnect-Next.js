@@ -23,7 +23,7 @@ import { Navbar, Footer } from '@/components/global'
 type Props = {};
 
 const PhotographerDescriptionPage = (props: Props) => {
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  //const { executeRecaptcha } = useGoogleReCaptcha();
   const searchParams = useSearchParams();
   const photographerId = searchParams.get("photographerId");
 
@@ -36,18 +36,18 @@ const PhotographerDescriptionPage = (props: Props) => {
     if (!photographerData.vendorUserId) return;
 
     const getServiceProviderData = async (hallData: PhotographerMasterSchemaType) => {
-      if (!executeRecaptcha) {
-        return;
-      }
+      // if (!executeRecaptcha) {
+      //   return;
+      // }
       try {
-        const captchaToken = await executeRecaptcha("inquirySubmit");
+        // const captchaToken = await executeRecaptcha("inquirySubmit");
 
         const response = await axios.get(
           `/api/routes/serviceProviderMaster/${hallData.vendorUserId}`,
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -61,7 +61,7 @@ const PhotographerDescriptionPage = (props: Props) => {
     };
 
     getServiceProviderData(photographerData);
-  }, [photographerData, executeRecaptcha]);
+  }, [photographerData]);
 
   // Fetch hall data whenever hallId changes
   useEffect(() => {
@@ -69,16 +69,16 @@ const PhotographerDescriptionPage = (props: Props) => {
     if (!photographerId) return;
 
     const getVendorData = async () => {
-      if (!executeRecaptcha) {
-        return;
-      }
+      // if (!executeRecaptcha) {
+      //   return;
+      // }
       try {
-        const captchaToken = await executeRecaptcha('inquirySubmit');
+        //const captchaToken = await executeRecaptcha('inquirySubmit');
 
         const response = await axios.get(`/api/routes/photographerMaster/${photographerId}`, {
           headers: {
             "Content-Type": "application/json",
-            "X-Captcha-Token": captchaToken,
+            //"X-Captcha-Token": captchaToken,
           },
           withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
         });
@@ -91,7 +91,7 @@ const PhotographerDescriptionPage = (props: Props) => {
     };
 
     getVendorData();
-  }, [photographerId, executeRecaptcha]);
+  }, [photographerId]);
 
   if (isLoading) return <LoadingScreen />;
 

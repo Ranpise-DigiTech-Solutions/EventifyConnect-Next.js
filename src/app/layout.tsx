@@ -1,6 +1,9 @@
+// src/app/layout.tsx
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ReduxProvider, ReCaptchaProvider } from "@/providers";
+import AppWrapper from "@/components/AppWrapper"; // ⬅️ New import
 import "@/styles/globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -18,9 +21,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ReCaptchaProvider>
-          <ReduxProvider>{children}</ReduxProvider>
-        </ReCaptchaProvider>
+        {/* <ReCaptchaProvider> */}
+          <ReduxProvider>
+            <AppWrapper>
+              {children}
+            </AppWrapper>
+          </ReduxProvider>
+        {/* </ReCaptchaProvider> */}
       </body>
     </html>
   );

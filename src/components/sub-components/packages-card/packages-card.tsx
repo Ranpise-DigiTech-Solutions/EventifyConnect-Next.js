@@ -27,12 +27,15 @@ import styles from "./packages-card.module.scss";
 import { onAuthStateChanged } from "firebase/auth";
 import { firebaseAuth } from "@/lib/db/firebase";
 import { useAppSelector } from "@/lib/hooks/use-redux-store";
-import { PackagesCardDataType } from "@/lib/types";
 import Image from "next/image";
 
 type Props = {
   vendorType: string;
-  card: PackagesCardDataType;
+  card: {
+    _id: string;
+    vendorImages: string[];
+    [key: string]: any; // Allow any other properties
+  };
   containerStyles?: {
     width: number;
     height: number;

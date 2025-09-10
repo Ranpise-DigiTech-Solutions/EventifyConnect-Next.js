@@ -33,7 +33,7 @@ type Props = {
 };
 
 const BookingHistoryComponent = ({ hallId }: Props) => {
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  //const { executeRecaptcha } = useGoogleReCaptcha();
 
   const userInfoStore = useAppSelector((state: RootState) => state.userInfo);
   const userType = userInfoStore.userDetails.userType || "";
@@ -172,13 +172,13 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
   }, [startDate]);
 
   useEffect(() => {
-    if (!startDateOfMonth || !endDateOfMonth || !executeRecaptcha) {
+    if (!startDateOfMonth || !endDateOfMonth) {
       return;
     }
 
     const getUserBookings = async () => {
       setIsPageLoading(true);
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+      //const captchaToken = await executeRecaptcha("inquirySubmit");
 
       setTimeout(async () => {
         try {
@@ -193,7 +193,7 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
           const response = await axios.get(URL, {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           });
@@ -208,7 +208,6 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
 
     getUserBookings();
   }, [
-    executeRecaptcha,
     startDateOfMonth,
     endDateOfMonth,
     dataSortCriteria,
@@ -260,14 +259,13 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
 
     if (
       !selectedBooking ||
-      !executeRecaptcha ||
       !bookingCancelDialogFormRef.current
     ) {
       return;
     }
 
     try {
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+      //const captchaToken = await executeRecaptcha("inquirySubmit");
       handleBookingCancelConfirmationDialogClose();
       setIsPageLoading(true);
 
@@ -287,7 +285,7 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
         {
           headers: {
             "Content-Type": "application/json",
-            "X-Captcha-Token": captchaToken,
+            //"X-Captcha-Token": captchaToken,
           },
           withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
         }
@@ -307,7 +305,7 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
   const handleConfirmBooking = async (event: any) => {
     event.preventDefault();
 
-    if (!selectedBooking || !executeRecaptcha) {
+    if (!selectedBooking) {
       return;
     }
 
@@ -318,7 +316,7 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
       // const formData = new FormData(event.currentTarget);
       // const formJson =Object.fromEntries((formData as any).entries());
       // const message = formJson.message;
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+      //const captchaToken = await executeRecaptcha("inquirySubmit");
       await axios.post(
         `/api/routes/bookingMaster/${selectedBooking._id}/confirmBooking/`,
         {
@@ -331,7 +329,7 @@ const BookingHistoryComponent = ({ hallId }: Props) => {
         {
           headers: {
             "Content-Type": "application/json",
-            "X-Captcha-Token": captchaToken,
+            //"X-Captcha-Token": captchaToken,
           },
           withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
         }

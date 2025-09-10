@@ -1,7 +1,6 @@
 import type { NextRequest } from "next/server";
 import { bookingMaster } from "@/app/api/schemas";
 import { ObjectId } from "mongodb";
-import axios from "axios";
 import connectDB from "@/lib/db/mongodb";
 
 // Helper function to check if a string is a valid ObjectId
@@ -12,7 +11,6 @@ function isObjectIdFormat(str: string) {
 export async function GET(req: NextRequest) {
   await connectDB(); // check database connection
   try {
-    const captchaToken = req.headers.get("X-Captcha-Token");
     const { searchParams } = new URL(req.url);
     const customerId = searchParams.get("customerId");
     const startDateOfMonth = searchParams.get("startDateOfMonth");
@@ -24,38 +22,7 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "0");
     const skip = page * limit;
 
-    if (!captchaToken) {
-      return new Response(
-        JSON.stringify({ message: "Missing captcha token!" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // check weather the user is valid
-    const reCaptchaResponse = await axios({
-      method: "POST",
-      url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
-      data: {
-        token: captchaToken,
-      },
-      headers: {
-        Accept: "application/json, text/plain, */*",
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (reCaptchaResponse.data.success === false) {
-      return new Response(
-        JSON.stringify({ message: "Invalid reCAPTCHA response" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
+    // --- All reCAPTCHA-related code has been removed from this section ---
 
     // Validate customerId
     if (!customerId || !isObjectIdFormat(customerId)) {
@@ -91,11 +58,11 @@ export async function GET(req: NextRequest) {
 
     const startDateUTC = new Date(
       startDateOfMonthObj.getTime() +
-        startDateOfMonthObj.getTimezoneOffset() * 60000
+      startDateOfMonthObj.getTimezoneOffset() * 60000
     ).toISOString();
     const endDateUTC = new Date(
       endDateOfMonthObj.getTime() +
-        endDateOfMonthObj.getTimezoneOffset() * 60000
+      endDateOfMonthObj.getTimezoneOffset() * 60000
     ).toISOString();
 
     const bookings = await bookingMaster.aggregate([
@@ -122,7 +89,7 @@ export async function GET(req: NextRequest) {
             {
               $and: [
                 { bookingStartDateTimestamp: { $lte: new Date(endDateUTC) } },
-                { bookingEndDateTimestamp: null }, // Handling bookings that extend beyond the selected date
+                { bookingEndDateTimestamp: null },
               ],
             },
           ],
@@ -205,7 +172,7 @@ export async function GET(req: NextRequest) {
                   then: "$bookingStatus",
                 },
               ],
-              default: null, // Optional: default value if none of the conditions match
+              default: null,
             },
           },
         },
@@ -214,7 +181,7 @@ export async function GET(req: NextRequest) {
         ? sortCriteria === "bookingStartDate"
           ? [{ $sort: { sortKey: -1 as -1 } }]
           : [{ $sort: { sortKey: 1 as 1 } }]
-        : []), // Apply sort if shouldSort is true
+        : []),
       {
         $facet: {
           bookings: [
@@ -225,7 +192,6 @@ export async function GET(req: NextRequest) {
                 _id: 1,
                 documentId: 1,
                 bookingStartDateTimestamp: 1,
-                // freezDays: "$hallMaster.hallFreezDays",
                 bookingDuration: 1,
                 bookingStatus: 1,
                 customerEmail: 1,

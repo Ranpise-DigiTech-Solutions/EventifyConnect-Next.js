@@ -1,16 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, memo } from "react";
 import { useAppDispatch } from "@/lib/hooks/use-redux-store";
 import { message } from "antd";
 import axios from "axios";
 import OTPInput from "react-otp-input";
 import { LoadingScreen } from "@/components/sub-components";
 import { getAuth, signInWithCustomToken } from "firebase/auth";
-import {
-  toggleUserAuthStateChangeFlag,
-} from "@/redux/slices/user-info";
-import useRecaptcha from "@/lib/hooks/use-reCaptcha-v3";
+import { toggleUserAuthStateChangeFlag } from "@/redux/slices/user-info";
 import styles from "./otp-verification-form.module.scss";
 
 type Props = {
@@ -21,143 +18,141 @@ type Props = {
   handleIsOTPVerified: () => void;
 };
 
-const OtpVerificationFormSubContainer = ({
+const OTPVerificationForm = ({
   emailId,
   userType,
   authType,
   handleDialogClose,
-  handleIsOTPVerified
+  handleIsOTPVerified,
 }: Props) => {
   const dispatch = useAppDispatch();
   const firebaseAuth = getAuth();
   const [messageApi, contextHolder] = message.useMessage();
   const [otp, setOTP] = useState<string>("");
-  const [OTPTimeLeft, setOTPTimeLeft] = useState<number>(0);
-  const token = useRecaptcha(); // get recaptcha token
-  const [loadingScreen, setLoadingScreen] = useState<boolean>(true); // toggle Loading Screen
-  const otpRequestSent = useRef(false); // Track if OTP request has been sent
+  const [otpTimeLeft, setOtpTimeLeft] = useState<number>(0);
+  const [loadingScreen, setLoadingScreen] = useState<boolean>(true);
+  const isMounted = useRef(true);
+  const otpSent = useRef(false); // track if OTP has been sent
 
-  const displaySuccessMessage = () => {
-    messageApi.open({
-      type: "success",
-      content: "OTP sent successfully!",
-    });
+  // Memoized message functions
+  const displaySuccessMessage = useCallback(() => {
+    messageApi.open({ type: "success", content: "OTP sent successfully!" });
+  }, [messageApi]);
+
+  const displayErrorMessage = useCallback(() => {
+    messageApi.open({ type: "error", content: "Sorry! Something went wrong." });
+  }, [messageApi]);
+  
+  const displayOtpValidationError = useCallback(() => {
+    messageApi.open({ type: "error", content: "OTP verification failed. Please try again." });
+  }, [messageApi]);
+
+  const handleOtpChange = (newOtp: string) => {
+    setOTP(newOtp);
   };
 
-  const displayErrorMessage = () => {
-    messageApi.open({
-      type: "error",
-      content: "Sorry! Something went wrong.",
-    });
-  };
-
-  // handle otp events
-  const handleOtpChange = (otp: string) => {
-    setOTP(otp);
-  };
-
-  // validate otp
-  useEffect(() => {
-    if (!otp) {
-      return;
-    }
-
-    const validateOTP = async (otp: string) => {
-      setLoadingScreen(true);
-      try {
-        const response = await axios.post(
-          "/api/routes/userAuthentication/validateOTP",
-          {
-            inputOTP: otp,
-            userType,
-            emailId,
-            authType
-          }
-        );
-        const { signInToken, valid } = response.data;
-
-        if (authType === "LOGIN" && !signInToken) {
-          displayErrorMessage();
-          setLoadingScreen(false);
-          handleDialogClose();
-        }
-        
-        if(authType === "LOGIN") {
-          await signInWithCustomToken(firebaseAuth, signInToken);
-          dispatch(toggleUserAuthStateChangeFlag());
-          handleDialogClose();
-        } else if (authType === "REGISTER") {
-          handleIsOTPVerified();
-        }
-        setLoadingScreen(false);
-      } catch (error) {
-        displayErrorMessage();
-        setLoadingScreen(false);
-        handleDialogClose();
-      }
-    };
-
-      if (otp.length === 6) {
-        validateOTP(otp);
-      }
-  }, [otp]);
-
-  // set 1 min timer
-  useEffect(() => {
-    // Exit early when we reach 0
-    if (OTPTimeLeft === 0) {
-      return;
-    }
-
-    // Save intervalId to clear the interval when the component re-renders
-    const intervalId = setInterval(() => {
-      setOTPTimeLeft((prev) => prev - 1);
-    }, 1000);
-
-    // Clear interval on re-render to avoid memory leaks
-    return () => clearInterval(intervalId);
-  }, [OTPTimeLeft]);
-
-  const getOTP = async () => {
-    if (otpRequestSent.current) return; // Prevent duplicate calls
-    otpRequestSent.current = true;
+  // Send OTP
+  const generateOTP = useCallback(async () => {
+    if (otpSent.current) return;
+    
+    setLoadingScreen(true);
+    otpSent.current = true;
     
     try {
       const response = await axios.post(
         "/api/routes/userAuthentication/generateOTP/",
-        {
-          userType,
-          emailId,
-        }
-        , {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Captcha-Token': token,
-          },
-          withCredentials: true // Include credentials (cookies, authorization headers, TLS client certificates)
-        }
+        { userType, emailId },
+        { headers: { "Content-Type": "application/json" }, withCredentials: true }
       );
+
       if (typeof response?.data?.otp === "number") {
-        setOTPTimeLeft(60);
+        setOtpTimeLeft(60);
         displaySuccessMessage();
       } else {
+        otpSent.current = false;
         displayErrorMessage();
         handleDialogClose();
       }
-      setLoadingScreen(false);
-    } catch (error: any) {
-      setLoadingScreen(false);
+    } catch (error) {
+      console.error(error);
+      otpSent.current = false;
       displayErrorMessage();
       handleDialogClose();
+    } finally {
+      if (isMounted.current) setLoadingScreen(false);
+    }
+  }, [userType, emailId, handleDialogClose, displaySuccessMessage, displayErrorMessage]);
+
+  // Validate OTP
+  const validateOTP = useCallback(async (inputOTP: string) => {
+    setLoadingScreen(true);
+    try {
+      const response = await axios.post("/api/routes/userAuthentication/validateOTP", {
+        inputOTP,
+        userType,
+        emailId,
+        authType,
+      });
+
+      const { signInToken, valid } = response.data;
+
+      if (authType === "LOGIN") {
+        if (!signInToken) {
+          displayOtpValidationError();
+          setOTP("");
+        } else {
+          await signInWithCustomToken(firebaseAuth, signInToken);
+          dispatch(toggleUserAuthStateChangeFlag());
+          handleDialogClose();
+        }
+      } else if (authType === "REGISTER" && valid) {
+        handleIsOTPVerified();
+      } else {
+        displayOtpValidationError();
+        setOTP("");
+      }
+    } catch (error) {
+      console.error(error);
+      displayErrorMessage();
+      handleDialogClose();
+    } finally {
+      if (isMounted.current) setLoadingScreen(false);
+    }
+  }, [authType, emailId, userType, handleDialogClose, handleIsOTPVerified, dispatch, firebaseAuth, displayErrorMessage, displayOtpValidationError]);
+
+  // Send OTP on mount
+  useEffect(() => {
+    if (isMounted.current && !otpSent.current) {
+      generateOTP();
+    }
+  }, [generateOTP]);
+
+  // Countdown timer
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+    if (otpTimeLeft > 0) {
+      intervalId = setInterval(() => {
+        setOtpTimeLeft((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [otpTimeLeft]);
+
+  // Auto-validate when OTP reaches 6 digits
+  useEffect(() => {
+    if (otp.length === 6) {
+      validateOTP(otp);
+    }
+  }, [otp, validateOTP]);
+
+  const handleResendClick = () => {
+    if (otpTimeLeft === 0) {
+      otpSent.current = false;
+      generateOTP();
     }
   };
-
-  // generate otp
-  useEffect(() => {
-    if (token && !otpRequestSent.current) {
-      getOTP();
-    }
-  }, [token]);
 
   return (
     <>
@@ -194,20 +189,11 @@ const OtpVerificationFormSubContainer = ({
           />
         </div>
         <div
-          className={`${styles.comment} ${
-            OTPTimeLeft === 0 && styles["comment__cursor-allowed"]
-          }`}
+          className={`${styles.comment} ${otpTimeLeft === 0 && styles["comment__cursor-allowed"]}`}
         >
           Didn&apos;t receive a code?{" "}
-          <span
-            onClick={() => {
-              if (!otpRequestSent.current) {
-                setLoadingScreen(true);
-                getOTP();
-              }
-            }}
-          >
-            Resend (00:{OTPTimeLeft.toString().padStart(2, "0")})
+          <span onClick={handleResendClick}>
+            Resend (00:{otpTimeLeft.toString().padStart(2, "0")})
           </span>
         </div>
       </div>
@@ -215,4 +201,4 @@ const OtpVerificationFormSubContainer = ({
   );
 };
 
-export default OtpVerificationFormSubContainer;
+export default memo(OTPVerificationForm);

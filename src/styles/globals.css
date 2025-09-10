@@ -117,3 +117,94 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* In your global stylesheet */
+
+.skeleton-container {
+  padding: 20px;
+  border-radius: 8px;
+  background-color: #f0f0f0;
+  max-width: 600px;
+  margin: 20px auto;
+}
+
+.skeleton-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.skeleton-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+}
+
+.skeleton-name-container {
+  margin-left: 15px;
+}
+
+.skeleton-name {
+  height: 20px;
+  width: 200px;
+  background-color: #e0e0e0;
+  margin-bottom: 8px;
+}
+
+.skeleton-subtitle {
+  height: 15px;
+  width: 150px;
+  background-color: #e0e0e0;
+}
+
+.skeleton-body {
+  margin-top: 20px;
+}
+
+.skeleton-line {
+  height: 15px;
+  background-color: #e0e0e0;
+  margin-bottom: 10px;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+/* Add the shimmer animation */
+.skeleton-avatar,
+.skeleton-name,
+.skeleton-subtitle,
+.skeleton-line {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-avatar::after,
+.skeleton-name::after,
+.skeleton-subtitle::after,
+.skeleton-line::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}

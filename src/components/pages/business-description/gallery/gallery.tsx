@@ -11,7 +11,7 @@ import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
 import { Captions, Fullscreen, Thumbnails, Zoom } from 'yet-another-react-lightbox/plugins';
 
-import { GalleryPhotoSlides, GalleryAlbumSlides, GalleryVideos } from '@/lib/constants'
+import { GalleryPhotoSlides, GalleryAlbumSlides, GalleryVideos } from '@/lib/constants';
 import 'yet-another-react-lightbox/plugins/captions.css';
 import 'yet-another-react-lightbox/plugins/thumbnails.css';
 import styles from './gallery.module.scss';

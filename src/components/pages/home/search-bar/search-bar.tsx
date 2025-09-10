@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks/use-redux-store";
 import Select, { SingleValue } from "react-select";
 import Button from "@mui/material/Button";
@@ -11,7 +11,6 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 
 import SearchIcon from "@mui/icons-material/Search";
-// import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import WarningIcon from "@mui/icons-material/Warning";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import CloseIcon from "@mui/icons-material/Close";
@@ -21,7 +20,12 @@ import { setSearchBoxFilterData } from "@/redux/slices/search-box-filter";
 import { RootState } from "@/redux/store";
 import styles from "./search-bar.module.scss";
 
-// TODO: change the way how eventTypes and vendorTypes are rendered - use both id and type... avoid querying for eventId when the search request is sent
+// Import the thunks
+import { 
+  fetchCitiesOfCountry, 
+  fetchEventTypes, 
+  fetchVendorTypes 
+} from '@/redux/thunks/data';
 
 type Props = {};
 
@@ -31,15 +35,28 @@ interface ReactSelectOptionType {
 }
 
 const SearchBarComponent = (props: Props) => {
-  const data = useAppSelector((state: RootState) => state.dataInfo); // CITIES, EVENT_TYPES & VENDOR_TYPES data
+  const data = useAppSelector((state: RootState) => state.dataInfo);
   const [eventNotSelectedWarning, setEventNotSelectedWarning] = useState(false);
 
   const searchBoxFilterStore = useAppSelector(
     (state: RootState) => state.searchBoxFilter
-  ); // Redux Store which holds all the user selection info. which includes cityName, eventType, bookingDate and vendorType
+  );
 
   const dispatch = useAppDispatch();
 
+  // This hook dispatches the API calls ONCE when the component mounts.
+  useEffect(() => {
+    dispatch(fetchCitiesOfCountry({ countryName: 'India' }));
+    dispatch(fetchEventTypes());
+    dispatch(fetchVendorTypes());
+  }, [dispatch]);
+
+  // This log will run on every render, allowing you to see the state after it updates.
+  console.log("Cities Data in Redux:", data.citiesOfCountry.data);
+  console.log("Event Types Data in Redux:", data.eventTypes.data);
+  console.log("Vendor Types Data in Redux:", data.vendorTypes.data);
+
+  // ... rest of the component
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     dispatch(
       setSearchBoxFilterData({ key: "bookingDate", value: event.target.value })
@@ -61,13 +78,13 @@ const SearchBarComponent = (props: Props) => {
     dropdownIndicator: (provided: any) => ({
       ...provided,
       "& svg": {
-        display: "none", // Hide the default arrow icon
+        display: "none",
       },
       padding: 10,
     }),
     placeholder: (provided: any) => ({
       ...provided,
-      color: "#999999", // Change the placeholder color here
+      color: "#999999",
     }),
   };
 
@@ -91,7 +108,7 @@ const SearchBarComponent = (props: Props) => {
                         value: city,
                         label: city,
                       }))
-                    : null
+                    : []
                 }
                 value={
                   searchBoxFilterStore.cityName
@@ -104,14 +121,12 @@ const SearchBarComponent = (props: Props) => {
                 onChange={(
                   selectedOption: SingleValue<ReactSelectOptionType>
                 ) => {
-                  if (selectedOption) {
-                    dispatch(
-                      setSearchBoxFilterData({
-                        key: "cityName",
-                        value: selectedOption.value,
-                      })
-                    ); // Update Details in 'SearchBoxFilter' Redux Store
-                  }
+                  dispatch(
+                    setSearchBoxFilterData({
+                      key: "cityName",
+                      value: selectedOption ? selectedOption.value : "",
+                    })
+                  );
                 }}
                 placeholder="Select or type a city..."
                 dropDownIndicator={true}
@@ -143,7 +158,7 @@ const SearchBarComponent = (props: Props) => {
                           label: item.eventName,
                         })
                       )
-                    : null
+                    : []
                 }
                 value={
                   searchBoxFilterStore.eventType
@@ -156,14 +171,12 @@ const SearchBarComponent = (props: Props) => {
                 onChange={(
                   selectedOption: SingleValue<ReactSelectOptionType>
                 ) => {
-                  if (selectedOption) {
-                    dispatch(
-                      setSearchBoxFilterData({
-                        key: "eventType",
-                        value: selectedOption.value,
-                      })
-                    ); // Update Details in 'SearchBoxFilter' Redux Store
-                  }
+                  dispatch(
+                    setSearchBoxFilterData({
+                      key: "eventType",
+                      value: selectedOption ? selectedOption.value : "",
+                    })
+                  );
                 }}
                 placeholder="Choose Event Type"
                 components={{
@@ -189,7 +202,7 @@ const SearchBarComponent = (props: Props) => {
                           label: val.vendorType,
                         })
                       )
-                    : null
+                    : []
                 }
                 value={
                   searchBoxFilterStore.vendorType
@@ -206,7 +219,7 @@ const SearchBarComponent = (props: Props) => {
                         key: "vendorType",
                         value: selectedOption ? selectedOption.value : "",
                       })
-                    ); // Update Details in 'SearchBoxFilter' Redux Store
+                    );
                   } else {
                     setEventNotSelectedWarning(true);
                   }
@@ -238,7 +251,7 @@ const SearchBarComponent = (props: Props) => {
                 onClick={() => {
                   dispatch(
                     setSearchBoxFilterData({ key: "cityName", value: "" })
-                  ); // Update Details in 'SearchBoxFilter' Redux Store
+                  );
                 }}
               />
             </div>
@@ -251,7 +264,7 @@ const SearchBarComponent = (props: Props) => {
                 onClick={() => {
                   dispatch(
                     setSearchBoxFilterData({ key: "bookingDate", value: "" })
-                  ); // Update Details in 'SearchBoxFilter' Redux Store
+                  );
                 }}
               />
             </div>
@@ -264,7 +277,7 @@ const SearchBarComponent = (props: Props) => {
                 onClick={() => {
                   dispatch(
                     setSearchBoxFilterData({ key: "eventType", value: "" })
-                  ); // Update Details in 'SearchBoxFilter' Redux Store
+                  );
                 }}
               />
             </div>
@@ -277,7 +290,7 @@ const SearchBarComponent = (props: Props) => {
                 onClick={() => {
                   dispatch(
                     setSearchBoxFilterData({ key: "vendorType", value: "" })
-                  ); /// Update Details in 'SearchBoxFilter' Redux Store
+                  );
                 }}
               />
             </div>

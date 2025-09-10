@@ -1,0 +1,14 @@
+export {default as hallMasterRoute} from './HallMaster.js';
+export {default as eventTypesRoute} from './EventTypes.js';
+export {default as chatBotRoute} from './ChatBot.js';
+export {default as countriesNowRoute} from './CountriesNow.js';
+export {default as bookingMasterRoute} from './BookingMaster.js';
+export {default as customerMasterRoute} from './CustomerMaster.js';
+export {default as vendorTypesRoute} from './VendorTypes.js';
+export {default as venueTypesRoute} from './VenueTypes.js';
+export {default as hallBookingMasterRoute} from './HallBookingMaster.js';
+export {default as geoLocationTrackerRoute} from './GeoLocationTracker.js';
+export {default as userAuthenticationRoute} from './UserAuthentication.js';
+export {default as serviceProviderMasterRoute} from './ServiceProviderMaster.js';
+export {default as vendorMasterRoute} from './VendorMaster.js';
+export {default as dashboardRoute} from './Dashboard.js';

@@ -149,7 +149,7 @@ const AdditionalVendorDetailsComponent = ({
     }
 
     const fetchSimilarHalls = async () => {
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+      // const captchaToken = await executeRecaptcha("inquirySubmit");
       const today = new Date();
       const formattedDate = format(today, "yyyy-MM-dd");
 
@@ -166,7 +166,7 @@ const AdditionalVendorDetailsComponent = ({
           },
           headers: {
             "Content-Type": "application/json",
-            "X-Captcha-Token": captchaToken,
+            //"X-Captcha-Token": captchaToken,
           },
           withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
         }
@@ -181,7 +181,7 @@ const AdditionalVendorDetailsComponent = ({
     } catch (error) {
       console.error(error);
     }
-  }, [executeRecaptcha, cardCount, pageNo]);
+  }, [cardCount, pageNo]);
 
   const snackBarAction = (
     <React.Fragment>

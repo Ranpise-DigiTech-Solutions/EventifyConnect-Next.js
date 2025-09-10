@@ -109,7 +109,7 @@ const photographerDataErrorInfoTemplate: PhotographerDataErrorInfoType = {
 };
 
 const PhotographerRegistrationForm = ({ open, handleClose }: Props) => {
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  //const { executeRecaptcha } = useGoogleReCaptcha();
   const dispatch = useAppDispatch();
   const data = useAppSelector((state: RootState) => state.dataInfo); // COUNTRIES, STATES & CITIES
   const userInfo = useAppSelector((state: RootState) => state.userInfo); // details of registered user.
@@ -322,7 +322,7 @@ const PhotographerRegistrationForm = ({ open, handleClose }: Props) => {
     } catch (error) {
       console.error(error);
     }
-  }, [isFileUploadComplete, executeRecaptcha]);
+  }, [isFileUploadComplete]);
 
   const validateFormOne = () => {
     if (!photographerData.companyName) {
@@ -649,13 +649,13 @@ const PhotographerRegistrationForm = ({ open, handleClose }: Props) => {
     handlePhotographerData("vendorImages", finalImageList);
   };
 
-  const handleFormSubmit = async () => {
-    if (!executeRecaptcha) {
-      return;
-    }
+ const handleFormSubmit = async () => {
+    // if (!executeRecaptcha) {
+    //   return;
+    // }
 
     setLoadingScreen(true);
-    const captchaToken = await executeRecaptcha("inquirySubmit");
+    //const captchaToken = await executeRecaptcha("inquirySubmit");
 
     const {
       vendorRegisterDocument,
@@ -670,14 +670,17 @@ const PhotographerRegistrationForm = ({ open, handleClose }: Props) => {
     } = photographerData;
 
     const data = {
-      ...otherFields,
-      vendorRegisterDocument: vendorRegisterDocumentUrl,
-      vendorImages: vendorImagesUrl,
-      vendorMainContactName:
-        vendorMainContactFirstName + " " + vendorMainContactLastName,
-      vendorAlternateContactLastName:
-        vendorAlternateContactFirstName + " " + vendorAlternateContactLastName,
-    };
+  ...otherFields,
+  vendorUserId: "66fa9272457dc9b8394c8600",
+  vendorTypeId: "6612e8e8dfb65ff32fa575f7",
+  programId: "USER",
+  vendorRegisterDocument: vendorRegisterDocumentUrl,
+  vendorImages: vendorImagesUrl,
+  vendorMainContactName:
+    vendorMainContactFirstName + " " + vendorMainContactLastName,
+  vendorAlternateContactName:
+    vendorAlternateContactFirstName + " " + vendorAlternateContactLastName,
+};
 
     const URL = `/api/routes/photographerMaster/`;
 
@@ -685,10 +688,11 @@ const PhotographerRegistrationForm = ({ open, handleClose }: Props) => {
       await axios.post(URL, data, {
         headers: {
           "Content-Type": "application/json",
-          "X-Captcha-Token": captchaToken,
+          //"X-Captcha-Token": captchaToken,
         },
         withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
       });
+      // Handle success, e.g., show a success message
     } catch (error: any) {
       setLoadingScreen(false);
       console.error(error.message);

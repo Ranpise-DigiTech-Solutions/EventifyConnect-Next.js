@@ -1,24 +1,24 @@
-// components/ReCaptchaCheckbox.tsx
+// // components/ReCaptchaCheckbox.tsx
 
-import React from 'react';
-import ReCAPTCHA from 'react-google-recaptcha';
+// import React from 'react';
+// import ReCAPTCHA from 'react-google-recaptcha';
 
-interface ReCaptchaCheckboxProps {
-  sitekey: string;
-  onChange: (token: string | null) => void;
-}
+// interface ReCaptchaCheckboxProps {
+//   sitekey: string;
+//   onChange: (token: string | null) => void;
+// }
 
-const ReCaptchaCheckbox: React.FC<ReCaptchaCheckboxProps> = ({ sitekey, onChange }) => {
-  const handleRecaptchaChange = (token: string | null) => {
-    onChange(token);
-  };
+// const ReCaptchaCheckbox: React.FC<ReCaptchaCheckboxProps> = ({ sitekey, onChange }) => {
+//   const handleRecaptchaChange = (token: string | null) => {
+//     onChange(token);
+//   };
 
-  return (
-    <ReCAPTCHA
-      sitekey={sitekey}
-      onChange={handleRecaptchaChange}
-    />
-  );
-};
+//   return (
+//     <ReCAPTCHA
+//       sitekey={sitekey}
+//       onChange={handleRecaptchaChange}
+//     />
+//   );
+// };
 
-export default ReCaptchaCheckbox;
+// export default ReCaptchaCheckbox;

@@ -41,7 +41,7 @@ interface calendarType {
 }
 
 const AvailabilityCalendarComponent = ({ hallData }: Props) => {
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  //const { executeRecaptcha } = useGoogleReCaptcha();
 
   const auspiciousDates: AuspiciousDate[] = [
     { date: "2024-09-20", time: "10:00 AM - 12:00 PM" },
@@ -187,18 +187,18 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
   };
 
   const getAvailability = async () => {
-    if (!executeRecaptcha) {
-      return;
-    }
+    // if (!executeRecaptcha) {
+    //   return;
+    // }
     try {
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+      // const captchaToken = await executeRecaptcha("inquirySubmit");
       if (startDateOfWeek && endDateOfWeek) {
         const response = await axios.get(
           `/api/routes/hallBookingMaster/getHallAvailability/?hallId=${hallData._id}&startDate=${startDateOfWeek}&endDate=${endDateOfWeek}`,
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -440,14 +440,14 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
   }, [startDate]);
 
   useEffect(() => {
-    if (!executeRecaptcha) {
-      return;
-    }
+    // if (!executeRecaptcha) {
+    //   return;
+    // }
     if (startDateOfWeek && endDateOfWeek) {
       setDates(startDateOfWeek, endDateOfWeek);
       getAvailability();
     }
-  }, [startDateOfWeek, endDateOfWeek, executeRecaptcha]);
+  }, [startDateOfWeek, endDateOfWeek]);
 
   // to fetch the data when the start date changes... condition written to check whether startDate lies in the same week... if so no need to refetch
   useEffect(() => {
@@ -499,8 +499,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
   useEffect(() => {
     if (
       !bookingInfoStore.startTime ||
-      !bookingInfoStore.endTime ||
-      !executeRecaptcha
+      !bookingInfoStore.endTime
     ) {
       return;
     }
@@ -547,10 +546,10 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
 
       // to check whether the booking overlaps with any existing ones
       const checkBookingSlotAvailability = async () => {
-        if (!executeRecaptcha) {
-          return;
-        }
-        const captchaToken = await executeRecaptcha("inquirySubmit");
+        // if (!executeRecaptcha) {
+        //   return;
+        // }
+        // const captchaToken = await executeRecaptcha("inquirySubmit");
         //clear any previous comments
         dispatch(setBookingInfoData({ key: "comments", value: "" }));
 
@@ -581,7 +580,7 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -615,7 +614,6 @@ const AvailabilityCalendarComponent = ({ hallData }: Props) => {
       console.error(error.message);
     }
   }, [
-    executeRecaptcha,
     bookingInfoStore.bookingStartDate,
     bookingInfoStore.bookingEndDate,
     bookingInfoStore.startTime,

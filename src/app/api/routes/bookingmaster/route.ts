@@ -8,42 +8,42 @@ import axios from "axios";
 
 export async function GET(req: NextRequest) {
   const filter = {};
-  const captchaToken = req.headers.get("X-Captcha-Token");
+  // const captchaToken = req.headers.get("X-Captcha-Token");
   try {
     await connectDB(); // check database connection
 
-    if (!captchaToken) {
-      return new Response(
-        JSON.stringify({ message: "Missing captcha token!" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
+    // if (!captchaToken) {
+    //   return new Response(
+    //     JSON.stringify({ message: "Missing captcha token!" }),
+    //     {
+    //       status: 401,
+    //       headers: { "Content-Type": "application/json" },
+    //     }
+    //   );
+    // }
 
     // check weather the user is valid
-    const reCaptchaResponse = await axios({
-      method: "POST",
-      url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
-      data: {
-        token: captchaToken,
-      },
-      headers: {
-        Accept: "application/json, text/plain, */*",
-        "Content-Type": "application/json",
-      },
-    });
+    // const reCaptchaResponse = await axios({
+    //   method: "POST",
+    //   url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
+    //   data: {
+    //     token: captchaToken,
+    //   },
+    //   headers: {
+    //     Accept: "application/json, text/plain, */*",
+    //     "Content-Type": "application/json",
+    //   },
+    // });
 
-    if (reCaptchaResponse.data.success === false) {
-      return new Response(
-        JSON.stringify({ message: "Invalid reCAPTCHA response" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
+    // if (reCaptchaResponse.data.success === false) {
+    //   return new Response(
+    //     JSON.stringify({ message: "Invalid reCAPTCHA response" }),
+    //     {
+    //       status: 400,
+    //       headers: { "Content-Type": "application/json" },
+    //     }
+    //   );
+    // }
 
     const bookings = await bookingMaster.find(filter);
 
@@ -70,42 +70,42 @@ export async function POST(req: NextRequest) {
   await connectDB(); // check database connection
   try {
     const postBody: any = await req.json();
-    const captchaToken = req.headers.get("X-Captcha-Token");
+    // const captchaToken = req.headers.get("X-Captcha-Token");
 
     console.log(postBody);
 
-    if (!captchaToken) {
-      return new Response(
-        JSON.stringify({ message: "Missing captcha token!" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
+    // if (!captchaToken) {
+    //   return new Response(
+    //     JSON.stringify({ message: "Missing captcha token!" }),
+    //     {
+    //       status: 401,
+    //       headers: { "Content-Type": "application/json" },
+    //     }
+    //   );
+    // }
 
     // check weather the user is valid
-    const reCaptchaResponse = await axios({
-      method: "POST",
-      url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
-      data: {
-        token: captchaToken,
-      },
-      headers: {
-        Accept: "application/json, text/plain, */*",
-        "Content-Type": "application/json",
-      },
-    });
+    // const reCaptchaResponse = await axios({
+    //   method: "POST",
+    //   url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
+    //   data: {
+    //     token: captchaToken,
+    //   },
+    //   headers: {
+    //     Accept: "application/json, text/plain, */*",
+    //     "Content-Type": "application/json",
+    //   },
+    // });
 
-    if (reCaptchaResponse.data.success === false) {
-      return new Response(
-        JSON.stringify({ message: "Invalid reCAPTCHA response" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
+    // if (reCaptchaResponse.data.success === false) {
+    //   return new Response(
+    //     JSON.stringify({ message: "Invalid reCAPTCHA response" }),
+    //     {
+    //       status: 400,
+    //       headers: { "Content-Type": "application/json" },
+    //     }
+    //   );
+    // }
 
     if (!postBody) {
       return new Response(

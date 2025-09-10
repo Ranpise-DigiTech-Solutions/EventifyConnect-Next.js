@@ -29,6 +29,9 @@ import Link from "next/link";
 import { PhotographerDetailsForm } from "@/components/forms";
 import CloseIcon from "@mui/icons-material/Close";
 import { photographerBookingDetails } from "@/app/api/schemas/booking-master";
+//import CatererRegistrationForm from "@/components/forms/caterer-registration-form"; // Import the new Caterer form
+import CatererDetailsForm from "@/components/forms/CatererDetailsForm";
+
 
 type Props = {
   open: boolean;
@@ -55,7 +58,7 @@ const FilteredSearchComponent = ({
   defaultFilters,
   setVendorData,
 }: Props) => {
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  //const { executeRecaptcha } = useGoogleReCaptcha();
 
   const data = useAppSelector((state: RootState) => state.dataInfo); // CITIES, EVENT_TYPES & VENDOR_TYPES data
   const [messageApi, contextHolder] = message.useMessage();
@@ -141,13 +144,13 @@ const FilteredSearchComponent = ({
   }, [defaultFilters]);
 
   useEffect(() => {
-    if (!executeRecaptcha || Object.keys(filters).length === 0) {
+    if (Object.keys(filters).length === 0) {
       return;
     }
 
     const fetchData = async () => {
       setIsLoading(true);
-      const captchaToken = await executeRecaptcha("inquirySubmit");
+      //const captchaToken = await executeRecaptcha("inquirySubmit");
       const today = new Date();
       const formattedDate = format(today, "yyyy-MM-dd");
       const selectedCityName = filters.cityName
@@ -192,7 +195,7 @@ const FilteredSearchComponent = ({
           params: PARAMS,
           headers: {
             "Content-Type": "application/json",
-            "X-Captcha-Token": captchaToken,
+            //"X-Captcha-Token": captchaToken,
           },
           withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
         });
@@ -221,7 +224,7 @@ const FilteredSearchComponent = ({
       }
     };
     fetchData();
-  }, [executeRecaptcha, filters, currentPage]);
+  }, [filters, currentPage]);
 
   console.log("Filtered Cards", filteredCards);
 
@@ -329,6 +332,38 @@ const FilteredSearchComponent = ({
             </Link>
           </CardDesign>
         ));
+        case "Caterer":
+        return filteredCards.map((card: PackagesCardDataType, index) => (
+          <CardDesign
+            key={index}
+            vendorType="Caterer"
+            vendorId={card._id}
+            vendorDetails={card}
+          >
+            <Link
+              href={{
+                pathname: "/caterer-description", // New page for caterer details
+                search: `?catererId=${card._id}`,
+              }}
+              target="_blank"
+            >
+              <PackagesCard
+                card={{
+                  _id: card._id,
+                  vendorImages: card.vendorImages || [],
+                  vendorDescription: card.vendorDescription || "",
+                  companyName: card.companyName || "",
+                  companyCity: card.companyCity || "",
+                  vendorCuisines: card.vendorCuisines,
+                  vendorMinGuests: card.vendorMinGuests,
+                  vendorMaxGuests: card.vendorMaxGuests,
+                }}
+                vendorType={"Caterer"}
+                containerStyles={{ width: 350, height: 400 }}
+              />
+            </Link>
+          </CardDesign>
+        ));
       default:
         return null;
     }
@@ -339,6 +374,16 @@ const FilteredSearchComponent = ({
       case "Photographer":
         return (
           <PhotographerDetailsForm
+            handleClose={handleFormDialogCLose}
+            vendorDetails={currentVendorSelection}
+            setVendorData={setVendorData}
+            setFilteredCards={setFilteredCards}
+            handleFilteredSearchComponentClose={handleClose}
+          />
+        );
+        case "Caterer":
+        return (
+          <CatererDetailsForm
             handleClose={handleFormDialogCLose}
             vendorDetails={currentVendorSelection}
             setVendorData={setVendorData}

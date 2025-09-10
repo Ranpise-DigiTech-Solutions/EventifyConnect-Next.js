@@ -37,7 +37,11 @@ import {
   WalkInCustomerBookingDialog,
 } from "..";
 import { firebaseAuth } from "@/lib/db/firebase";
-import { setUserInfoData } from "@/redux/slices/user-info";
+import {
+  setUserDetails,
+  setUserLocation,
+  toggleUserAuthStateChangeFlag,
+} from "@/redux/slices/user-info";
 import axios from "axios";
 import { RootState } from "@/redux/store";
 import styles from "./navbar.module.scss";
@@ -116,7 +120,9 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
   const handleLogout = async () => {
     try {
       await firebaseAuth.signOut(); // Sign out the current user
-      dispatch(setUserInfoData({ key: "userDetails", value: {} }));
+      // New, type-safe way
+      const response = await axios.get(`/api/routes/userAuthentication/${user.uid}`);
+      dispatch(setUserDetails(response.data));
       setUser(null);
     } catch (error: any) {
       // Handle Error condition
@@ -125,9 +131,9 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
   };
 
   useEffect(() => {
-    if (!executeRecaptcha) {
-      return;
-    }
+    //if (!executeRecaptcha) {
+      //return;
+    //}
     const unsubscribe = onAuthStateChanged(
       firebaseAuth,
       async (currentUser) => {
@@ -137,20 +143,19 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
 
           const getUserData = async () => {
             try {
-              const captchaToken = await executeRecaptcha("inquirySubmit");
+              
               const response = await axios.get(
                 `/api/routes/userAuthentication/${currentUser.uid}`,
                 {
                   headers: {
                     "Content-Type": "application/json",
-                    "X-Captcha-Token": captchaToken,
+
                   },
                   withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
                 }
               );
-              dispatch(
-                setUserInfoData({ key: "userDetails", value: response.data })
-              );
+              // New, type-safe way
+              dispatch(setUserDetails(response.data     ));
             } catch (error: any) {
               console.error("Error fetching user data:", error.message);
             } finally {
@@ -167,7 +172,7 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
     );
 
     return () => unsubscribe();
-  }, [dispatch, userInfoStore.userAuthStateChangeFlag, executeRecaptcha]); // dependency array => [userAuthStateChangeFlag]
+  }, [dispatch, userInfoStore.userAuthStateChangeFlag]); // dependency array => [userAuthStateChangeFlag]
 
   // get hall data
   useEffect(() => {
@@ -187,7 +192,7 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -202,7 +207,7 @@ const NavbarComponent = ({ setIsLoading }: Props) => {
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }

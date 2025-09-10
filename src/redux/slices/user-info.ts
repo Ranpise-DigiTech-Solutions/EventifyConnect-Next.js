@@ -1,14 +1,15 @@
-// // slices/userInfoSlice.ts
+// slices/userInfoSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-// interface UserInfoState {
-//   userLocation: string;
-//   userDetails: Record<string, any>;
-//   userAuthStateChangeFlag: boolean;
-//   userDataUpdateFlag: boolean;
-// }
+// 1. Define a strongly typed interface for your state
+export interface UserInfoState {
+  userLocation: string;
+  userDetails: Record<string, any>;
+  userAuthStateChangeFlag: boolean;
+  userDataUpdateFlag: boolean;
+}
 
-const initialState: any = {
+const initialState: UserInfoState = {
   userLocation: '',
   userDetails: {},
   userAuthStateChangeFlag: false,
@@ -17,21 +18,25 @@ const initialState: any = {
 
 // Define the slice with initial state and reducers
 const userInfoSlice = createSlice({
-    name: 'userInfo',
-    initialState,
-    reducers: {
-      setUserInfoData(state, action: PayloadAction<{ key: any; value: any }>) {
-        state[action.payload.key] = action.payload.value;
-      },
-      toggleUserAuthStateChangeFlag(state) {
-        state.userAuthStateChangeFlag = !state.userAuthStateChangeFlag;
-      },
-      toggleUserDataUpdateFlag(state) {
-        state.userDataUpdateFlag = !state.userDataUpdateFlag;
-      },
+  name: 'userInfo',
+  initialState,
+  reducers: {
+    // 2. Refactor the generic reducer into specific, type-safe ones
+    setUserLocation(state, action: PayloadAction<string>) {
+      state.userLocation = action.payload;
     },
-  });
+    setUserDetails(state, action: PayloadAction<Record<string, any>>) {
+      state.userDetails = action.payload;
+    },
+    toggleUserAuthStateChangeFlag(state) {
+      state.userAuthStateChangeFlag = !state.userAuthStateChangeFlag;
+    },
+    toggleUserDataUpdateFlag(state) {
+      state.userDataUpdateFlag = !state.userDataUpdateFlag;
+    },
+  },
+});
 
-export const { setUserInfoData, toggleUserAuthStateChangeFlag, toggleUserDataUpdateFlag } = userInfoSlice.actions;
+export const { setUserLocation, setUserDetails, toggleUserAuthStateChangeFlag, toggleUserDataUpdateFlag } = userInfoSlice.actions;
 
 export default userInfoSlice.reducer;

@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"; // Ensure correct imports
+import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { firestore } from "@/lib/db/firebase";
@@ -12,47 +12,21 @@ interface OTPRequest {
 }
 
 export async function POST(req: NextRequest) {
-  // Check if the request has a valid email address
   const { emailId, userType } = await req.json();
-  const captchaToken = req.headers.get('X-Captcha-Token');
+  const cookieStore = cookies();
+  const currentTime = Date.now();
 
-  if (!captchaToken || !userType || !emailId || !emailId.endsWith("@gmail.com")) {
-    return new Response(JSON.stringify({ message: "Invalid credentials" }), {
+  // Validate the request body
+  if (!userType || !emailId || !emailId.endsWith("@gmail.com")) {
+    return new NextResponse(JSON.stringify({ message: "Invalid credentials" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  // check weather the user is valid
-  const reCaptchaResponse = await axios({
-    method: "POST",
-    url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
-    data: {
-      token: captchaToken, 
-    },
-    headers: {
-      Accept: "application/json, text/plain, */*",
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (reCaptchaResponse.data.success === false) {
-    return new Response(
-      JSON.stringify({ message: "Invalid reCAPTCHA response" }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  }
-
-  // Adjust the response type
-  const cookieStore = cookies();
-  const currentTime = Date.now();
-  const otpRequestsCookie = cookieStore.get("otp_requests");
-  
-  const otpRequests: OTPRequest[] = otpRequestsCookie?.value
-    ? JSON.parse(otpRequestsCookie.value || "")
+  const otpRequestsCookie = await cookieStore.get("otp_requests");
+  const otpRequests: OTPRequest[] = otpRequestsCookie
+    ? JSON.parse(otpRequestsCookie.value || "[]")
     : [];
 
   // Filter out requests older than an hour
@@ -61,7 +35,7 @@ export async function POST(req: NextRequest) {
   );
 
   if (validRequests.length >= MAX_OTP_REQUESTS_PER_HOUR) {
-    return new Response(
+    return new NextResponse(
       JSON.stringify({
         message: "Too many OTP requests. Please try again later.",
       }),
@@ -76,7 +50,7 @@ export async function POST(req: NextRequest) {
   validRequests.push({ timestamp: currentTime });
 
   // Update cookie
-  cookieStore.set({
+  await cookieStore.set({
     name: "otp_requests",
     value: JSON.stringify(validRequests),
     httpOnly: true,
@@ -88,53 +62,53 @@ export async function POST(req: NextRequest) {
   // Generate and send OTP (pseudo-code)
   const otp = Math.floor(100000 + Math.random() * 900000);
 
-  // update the otp in database with timer
+  // Update the OTP in Firestore
   const otpDocRef = doc(firestore, "otps", "email", userType, emailId);
   await setDoc(otpDocRef, {
     otp,
     createdAt: serverTimestamp(),
   });
 
+  // Send OTP via email service
+  const emailServiceUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/emailService/`;
+  const emailServicePayload = {
+    senderType: "INFO_EC",
+    recipientEmailId: emailId,
+    subject: "EventifyConnect - OTP Verification",
+    message: `
+      <p>Dear ${userType === "CUSTOMER" ? "Customer" : "Vendor"},</p>
+      <p>Thank you for using our services. Please find your OTP (One-Time Password) below for verification:</p>
+      <p><strong>OTP:</strong> ${otp}</p>
+      <p>Please use this OTP within <strong> 5 </strong> minutes to complete your verification process. For security reasons, do not share this OTP with anyone.</p>
+      <p>If you did not request this OTP, please ignore this email.</p>
+      <p>Thank you,<br/>
+      EventifyConnect Team</p>
+    `,
+  };
 
-  //send OTP to email
-  const response = await axios.post(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/emailService/`,
-    {
-      senderType: "INFO_EC",
-      recipientEmailId: emailId,
-      subject: "EventifyConnect - OTP Verification",
-      message: `
-          <p>Dear ${userType === "CUSTOMER" ? "Customer" : "Vendor"},</p>
+  try {
+    const response = await axios.post(emailServiceUrl, emailServicePayload);
 
-          <p>Thank you for using our services. Please find your OTP (One-Time Password) below for verification:</p>
-
-          <p><strong>OTP:</strong> ${otp}</p>
-
-          <p>Please use this OTP within <strong> 5 </strong> minutes to complete your verification process. For security reasons, do not share this OTP with anyone.</p>
-
-          <p>If you did not request this OTP, please ignore this email.</p>
-
-          <p>Thank you,<br/>
-
-          EventifyConnect Team</p>
-      `,
+    if (!response?.data?.sent) {
+      console.error("Failed to send OTP. Response from email service:", response?.data);
+      return new NextResponse(JSON.stringify({ message: "Failed to send OTP" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
-  );
 
-  
-
-  if (!response?.data?.sent) {
-    return new Response(JSON.stringify({ message: "Failed to send OTP" }), {
+    return new NextResponse(
+      JSON.stringify({ message: "OTP sent successfully", otp }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.error("Error sending email:", error);
+    return new NextResponse(JSON.stringify({ message: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
   }
-
-  return new Response(
-    JSON.stringify({ message: "OTP sent successfully", otp }),
-    {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    }
-  );
 }

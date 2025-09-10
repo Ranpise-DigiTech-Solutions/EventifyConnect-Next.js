@@ -6,39 +6,7 @@ import axios from "axios";
 export async function POST(req: NextRequest) {
   const reqBody = await req.json();
 
-  const captchaToken = req.headers.get("X-Captcha-Token");
-
-  if (!captchaToken) {
-    return new Response(JSON.stringify({ message: "Missing captcha token!" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  // check weather the user is valid
-  const reCaptchaResponse = await axios({
-    method: "POST",
-    url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
-    data: {
-      token: captchaToken,
-    },
-    headers: {
-      Accept: "application/json, text/plain, */*",
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (reCaptchaResponse.data.success === false) {
-    return new Response(
-      JSON.stringify({ message: "Invalid reCAPTCHA response" }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  }
-
-  if (!reqBody || reqBody.length === 0) {
+  if (!reqBody || Object.keys(reqBody).length === 0) {
     return new Response(
       JSON.stringify({ message: "Required body attachment not found!!" }),
       {
@@ -68,49 +36,23 @@ export async function POST(req: NextRequest) {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-  } catch (error) {
-    
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+  } catch (error: any) {
+    console.error("Mongoose Validation Error:", error.message);
+    return new Response(
+      JSON.stringify({
+        error: "Validation failed",
+        details: error.message, // Return the detailed error message
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }
 
 export async function GET(req: NextRequest) {
   const filter = {};
-
-  const captchaToken = req.headers.get("X-Captcha-Token");
-
-  if (!captchaToken) {
-    return new Response(JSON.stringify({ message: "Missing captcha token!" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  // check weather the user is valid
-  const reCaptchaResponse = await axios({
-    method: "POST",
-    url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/routes/reCaptchaValidation/v3/`,
-    data: {
-      token: captchaToken,
-    },
-    headers: {
-      Accept: "application/json, text/plain, */*",
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (reCaptchaResponse.data.success === false) {
-    return new Response(
-      JSON.stringify({ message: "Invalid reCAPTCHA response" }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  }
 
   try {
     await connectDB(); // check database connection

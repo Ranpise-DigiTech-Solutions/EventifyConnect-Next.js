@@ -25,7 +25,7 @@ import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 type Props = {};
 
 const HallDescriptionPage = (props: Props) => {
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  //const { executeRecaptcha } = useGoogleReCaptcha();
     const searchParams = useSearchParams();
   const hallId = searchParams.get("hallId");
 
@@ -40,18 +40,18 @@ const HallDescriptionPage = (props: Props) => {
     if (!hallData.hallUserId) return;
 
     const getServiceProviderData = async (hallData: { hallUserId: string }) => {
-      if (!executeRecaptcha) {
-        return;
-      }
+      // if (!executeRecaptcha) {
+      //   return;
+      // }
       try {
-        const captchaToken = await executeRecaptcha("inquirySubmit");
+        //const captchaToken = await executeRecaptcha("inquirySubmit");
 
         const response = await axios.get(
           `/api/routes/serviceProviderMaster/${hallData.hallUserId}`,
           {
             headers: {
               "Content-Type": "application/json",
-              "X-Captcha-Token": captchaToken,
+              //"X-Captcha-Token": captchaToken,
             },
             withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
           }
@@ -65,7 +65,7 @@ const HallDescriptionPage = (props: Props) => {
     };
 
     getServiceProviderData(hallData);
-  }, [hallData, executeRecaptcha]);
+  }, [hallData]);
 
   // Fetch hall data whenever hallId changes
   useEffect(() => {
@@ -73,16 +73,16 @@ const HallDescriptionPage = (props: Props) => {
     if (!hallId) return;
 
     const getHallData = async () => {
-      if (!executeRecaptcha) {
-        return;
-      }
+      // if (!executeRecaptcha) {
+      //   return;
+      // }
       try {
-        const captchaToken = await executeRecaptcha('inquirySubmit');
+        //const captchaToken = await executeRecaptcha('inquirySubmit');
 
         const response = await axios.get(`/api/routes/hallMaster/${hallId}`, {
           headers: {
             "Content-Type": "application/json",
-            "X-Captcha-Token": captchaToken,
+            //"X-Captcha-Token": captchaToken,
           },
           withCredentials: true, // Include credentials (cookies, authorization headers, TLS client certificates)
         });
@@ -95,7 +95,7 @@ const HallDescriptionPage = (props: Props) => {
     };
 
     getHallData();
-  }, [hallId, executeRecaptcha]);
+  }, [hallId]);
 
   const handleBookingDetailsDialogOpen = () => {
     setOpenBookingDetailsDialog(true);
