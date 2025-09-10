@@ -1,8 +1,19 @@
 import admin, { ServiceAccount } from 'firebase-admin';
-import serviceAccount from '../../serviceAccountKey.json';
 
-// Type assertion for service account
-const serviceAccountData = serviceAccount as ServiceAccount;
+// Get the service account key from an environment variable
+const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+
+if (!serviceAccountString) {
+  throw new Error('The FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
+}
+
+// Parse the JSON string into a JavaScript object
+let serviceAccountData: ServiceAccount;
+try {
+  serviceAccountData = JSON.parse(serviceAccountString) as ServiceAccount;
+} catch (error) {
+  throw new Error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY. Ensure it is valid JSON.');
+}
 
 if (!admin.apps.length) {
   admin.initializeApp({
